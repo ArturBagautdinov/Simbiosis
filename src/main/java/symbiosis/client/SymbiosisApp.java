@@ -14,6 +14,8 @@ import symbiosis.client.net.GameClient;
 import symbiosis.client.ui.CompassView;
 import symbiosis.client.ui.GameCanvas;
 import symbiosis.client.ui.ViewState;
+import symbiosis.client.ui.SkinTheme;
+import symbiosis.client.ui.SoundManager;
 import symbiosis.common.model.*;
 import symbiosis.common.net.*;
 
@@ -38,31 +40,136 @@ public class SymbiosisApp extends Application {
     private Label roleLabel;
     private Label pauseLabel;
     private Label completedLabel;
+    private Label connectionLabel;
+
+    private StackPane root;
+    private Pane menuPane;
+    private BorderPane gamePane;
+
+    private String host;
+    private int port;
+    private String playerName;
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Symbiosis");
 
-        TextField hostField = new TextField("localhost");
-        hostField.setPrefWidth(120);
-        TextField portField = new TextField("5555");
-        portField.setPrefWidth(70);
-        TextField nameField = new TextField("Player");
-        nameField.setPrefWidth(120);
-        Button connectButton = new Button("Connect");
+        gamePane = createGamePane();
+        menuPane = createMenuPane();
 
-        HBox topBar = new HBox(10,
+        root = new StackPane(gamePane, menuPane);
+        gamePane.setVisible(false);
+        menuPane.setVisible(true);
+
+        Scene scene = new Scene(root, 980, 750);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (client == null) return;
+            if (viewState.getClientId() == null) return;
+
+            if (event.getCode() == KeyCode.ESCAPE) {
+                paused = !paused;
+                pauseLabel.setText(paused ? "PAUSED" : "");
+                event.consume();
+                return;
+            }
+
+            if (viewState.isLevelCompleted()) {
+                PlayerRole role = viewState.getLocalRole();
+                if (event.getCode() == KeyCode.R && role == PlayerRole.CRAB) {
+                    client.send(new InputMessage(viewState.getClientId(), InputMessage.InputType.ACTION));
+                } else if (event.getCode() == KeyCode.N && role == PlayerRole.FISH) {
+                    client.send(new InputMessage(viewState.getClientId(), InputMessage.InputType.ACTION));
+                }
+                event.consume();
+                return;
+            }
+
+            if (paused) return;
+
+            InputMessage.InputType type = null;
+            if (event.getCode() == KeyCode.W || event.getCode() == KeyCode.UP) {
+                type = InputMessage.InputType.MOVE_UP;
+            } else if (event.getCode() == KeyCode.S || event.getCode() == KeyCode.DOWN) {
+                type = InputMessage.InputType.MOVE_DOWN;
+            } else if (event.getCode() == KeyCode.A || event.getCode() == KeyCode.LEFT) {
+                type = InputMessage.InputType.MOVE_LEFT;
+            } else if (event.getCode() == KeyCode.D || event.getCode() == KeyCode.RIGHT) {
+                type = InputMessage.InputType.MOVE_RIGHT;
+            } else if (event.getCode() == KeyCode.SPACE) {
+                type = InputMessage.InputType.ACTION;
+            }
+
+            if (type != null) {
+                sendInput(type);
+                event.consume(); // чтобы WASD не печатались в чат и поля
+            }
+        });
+
+    }
+
+    private Pane createMenuPane() {
+        VBox menu = new VBox(10);
+        menu.setPadding(new Insets(20));
+        menu.setAlignment(Pos.CENTER);
+
+        Label title = new Label("Symbiosis");
+        title.setStyle("-fx-font-size: 32px; -fx-font-weight: bold;");
+
+        TextField hostField = new TextField("localhost");
+        TextField portField = new TextField("5555");
+        TextField nameField = new TextField("Player");
+
+        hostField.setMaxWidth(200);
+        portField.setMaxWidth(200);
+        nameField.setMaxWidth(200);
+
+        ComboBox<SkinTheme> skinBox = new ComboBox<>();
+        skinBox.getItems().addAll(SkinTheme.CLASSIC, SkinTheme.OCEAN, SkinTheme.DEEP);
+        skinBox.setValue(SkinTheme.CLASSIC);
+        skinBox.setMaxWidth(200);
+
+        Label skinLabel = new Label("Skin theme:");
+
+        Button startButton = new Button("Start Game");
+        Label statusLabel = new Label();
+        statusLabel.setTextFill(Color.ORANGE);
+
+        startButton.setOnAction(e -> {
+            host = hostField.getText().trim();
+            if (host.isEmpty()) host = "localhost";
+            try {
+                port = Integer.parseInt(portField.getText().trim());
+            } catch (NumberFormatException ex) {
+                statusLabel.setText("Invalid port");
+                return;
+            }
+            playerName = nameField.getText().trim();
+            if (playerName.isEmpty()) {
+                statusLabel.setText("Enter name");
+                return;
+            }
+
+            viewState.setSkinTheme(skinBox.getValue());
+            statusLabel.setText("Connecting...");
+            connectToServer(host, port, playerName, statusLabel);
+        });
+
+        VBox fields = new VBox(5,
                 new Label("Host:"), hostField,
                 new Label("Port:"), portField,
                 new Label("Name:"), nameField,
-                connectButton
+                skinLabel, skinBox
         );
-        topBar.setPadding(new Insets(10));
-        topBar.setAlignment(Pos.CENTER_LEFT);
+        fields.setAlignment(Pos.CENTER_LEFT);
 
-        gameCanvas = new GameCanvas(800, 600, viewState);
-        compassView = new CompassView(120, viewState);
+        menu.getChildren().addAll(title, fields, startButton, statusLabel);
+        return menu;
+    }
 
+    private BorderPane createGamePane() {
         roleLabel = new Label("Role: —");
         roleLabel.setTextFill(Color.LIGHTGRAY);
 
@@ -72,22 +179,33 @@ public class SymbiosisApp extends Application {
         completedLabel = new Label("Completed: 0");
         completedLabel.setTextFill(Color.LIGHTGREEN);
 
+        connectionLabel = new Label("Not connected");
+        connectionLabel.setTextFill(Color.LIGHTGRAY);
+
+        HBox topBar = new HBox(15,
+                connectionLabel,
+                new Separator(),
+                roleLabel,
+                pauseLabel,
+                completedLabel
+        );
+        topBar.setPadding(new Insets(10));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+
+        gameCanvas = new GameCanvas(800, 600, viewState);
+        compassView = new CompassView(120, viewState);
+
         Label hudTitle = new Label("Controls:");
         Label hudMove = new Label("WASD / ↑↓←→ – движение");
         Label hudAction = new Label("Space – действие");
         Label hudRestart = new Label("R – рестарт уровня (после победы, краб)");
         Label hudNext = new Label("N – следующий уровень (после победы, рыбка)");
-        Label hudGoal = new Label("Цель: оба достигли зелёного выхода");
-
+        Label hudGoal = new Label("Цель: оба игрока должны стоять на выходе");
         Label hudFish = new Label("Рыбка: свет и активация грибов");
         Label hudCrab = new Label("Краб: толкает ящики, видит только в свету");
         Label hudPause = new Label("ESC – пауза");
 
         VBox hudBox = new VBox(4,
-                roleLabel,
-                pauseLabel,
-                completedLabel,
-                new Separator(),
                 new Label("Partner compass:"),
                 compassView,
                 new Separator(),
@@ -127,79 +245,20 @@ public class SymbiosisApp extends Application {
         VBox bottomBox = new VBox(5, new Label("Log / Chat:"), logArea, chatBox);
         bottomBox.setPadding(new Insets(10));
 
-        BorderPane root = new BorderPane();
-        root.setTop(topBar);
-        root.setCenter(centerRow);
-        root.setBottom(bottomBox);
+        sendChatButton.setOnAction(e -> sendChat());
+        chatInput.setOnAction(e -> sendChat());
 
-        Scene scene = new Scene(root, 980, 750);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        BorderPane gameRoot = new BorderPane();
+        gameRoot.setTop(topBar);
+        gameRoot.setCenter(centerRow);
+        gameRoot.setBottom(bottomBox);
 
-        scene.setOnKeyPressed(event -> {
-            if (client == null) return;
-            if (viewState.getClientId() == null) return;
-
-            if (event.getCode() == KeyCode.ESCAPE) {
-                paused = !paused;
-                pauseLabel.setText(paused ? "PAUSED" : "");
-                return;
-            }
-
-            if (viewState.isLevelCompleted()) {
-                PlayerRole role = viewState.getLocalRole();
-                if (event.getCode() == KeyCode.R && role == PlayerRole.CRAB) {
-                    client.send(new InputMessage(viewState.getClientId(), InputMessage.InputType.ACTION));
-                } else if (event.getCode() == KeyCode.N && role == PlayerRole.FISH) {
-                    client.send(new InputMessage(viewState.getClientId(), InputMessage.InputType.ACTION));
-                }
-                return;
-            }
-
-            if (paused) return;
-
-            InputMessage.InputType type = null;
-            if (event.getCode() == KeyCode.W || event.getCode() == KeyCode.UP) {
-                type = InputMessage.InputType.MOVE_UP;
-            } else if (event.getCode() == KeyCode.S || event.getCode() == KeyCode.DOWN) {
-                type = InputMessage.InputType.MOVE_DOWN;
-            } else if (event.getCode() == KeyCode.A || event.getCode() == KeyCode.LEFT) {
-                type = InputMessage.InputType.MOVE_LEFT;
-            } else if (event.getCode() == KeyCode.D || event.getCode() == KeyCode.RIGHT) {
-                type = InputMessage.InputType.MOVE_RIGHT;
-            } else if (event.getCode() == KeyCode.SPACE) {
-                type = InputMessage.InputType.ACTION;
-            }
-
-            if (type != null) {
-                sendInput(type);
-            }
-        });
-
-        connectButton.setOnAction(e -> {
-            String host = hostField.getText().trim();
-            int port;
-            try {
-                port = Integer.parseInt(portField.getText().trim());
-            } catch (NumberFormatException ex) {
-                appendLog("Invalid port");
-                return;
-            }
-            String name = nameField.getText().trim();
-            if (name.isEmpty()) {
-                appendLog("Enter name");
-                return;
-            }
-            connectToServer(host, port, name);
-        });
-
-        sendChatButton.setOnAction(e -> sendChat(nameField));
-        chatInput.setOnAction(e -> sendChat(nameField));
+        return gameRoot;
     }
 
-    private void connectToServer(String host, int port, String playerName) {
+    private void connectToServer(String host, int port, String playerName, Label statusLabel) {
         if (client != null) {
-            appendLog("Already connected (or connecting)");
+            statusLabel.setText("Already connected (or connecting)");
             return;
         }
 
@@ -216,11 +275,16 @@ public class SymbiosisApp extends Application {
 
                 Platform.runLater(() -> {
                     this.client = gameClient;
+                    statusLabel.setText("Connected. Waiting for role...");
                     appendLog("Connected, JOIN sent as " + playerName);
+                    connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName);
                 });
 
             } catch (IOException ex) {
-                Platform.runLater(() -> appendLog("Connection failed: " + ex.getMessage()));
+                Platform.runLater(() -> {
+                    statusLabel.setText("Connection failed: " + ex.getMessage());
+                    appendLog("Connection failed: " + ex.getMessage());
+                });
             }
         }, "ConnectThread").start();
     }
@@ -232,6 +296,15 @@ public class SymbiosisApp extends Application {
             viewState.setLocalRole(role);
             updateRoleLabel(role);
             appendLog("Role assigned: " + role + ", id=" + roleMsg.getPlayerId());
+
+            if (menuPane != null) {
+                menuPane.setVisible(false);
+            }
+            if (gamePane != null) {
+                gamePane.setVisible(true);
+            }
+
+            connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName + " (" + role + ")");
         } else if (msg instanceof LevelDataMessage levelMsg) {
             applyLevelData(levelMsg);
         } else if (msg instanceof StateUpdateMessage stateMsg) {
@@ -378,22 +451,32 @@ public class SymbiosisApp extends Application {
         if (paused) return;
         String clientId = viewState.getClientId();
         if (clientId == null) return;
+
         client.send(new InputMessage(clientId, type));
+
+        if (type == InputMessage.InputType.MOVE_UP
+                || type == InputMessage.InputType.MOVE_DOWN
+                || type == InputMessage.InputType.MOVE_LEFT
+                || type == InputMessage.InputType.MOVE_RIGHT) {
+            SoundManager.playMove();
+        } else if (type == InputMessage.InputType.ACTION) {
+            SoundManager.playAction();
+        }
     }
 
-    private void sendChat(TextField nameField) {
+    private void sendChat() {
         if (client == null) {
             appendLog("Not connected");
             return;
         }
         String text = chatInput.getText().trim();
         if (text.isEmpty()) return;
-        String from = nameField.getText().trim();
-        client.send(new ChatMessage(from, text));
+        client.send(new ChatMessage(playerName, text));
         chatInput.clear();
     }
 
     private void appendLog(String text) {
+        if (logArea == null) return;
         if (logArea.getText().isEmpty()) {
             logArea.setText(text);
         } else {
@@ -403,6 +486,8 @@ public class SymbiosisApp extends Application {
 
     private void showLevelCompletedDialog() {
         appendLog("LEVEL COMPLETED!");
+
+        SoundManager.playWin();
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Symbiosis");

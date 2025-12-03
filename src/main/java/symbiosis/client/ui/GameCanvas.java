@@ -104,6 +104,42 @@ public class GameCanvas extends Canvas {
             return;
         }
 
+        // цвета в зависимости от темы
+        SkinTheme theme = viewState.getSkinTheme();
+        Color wallColor;
+        Color emptyColor;
+        Color darkTileColor;
+        Color lightTileColor;
+        Color fishColor;
+        Color crabColor;
+
+        switch (theme) {
+            case OCEAN -> {
+                wallColor = Color.DARKBLUE;
+                emptyColor = Color.rgb(5, 10, 30);
+                darkTileColor = Color.rgb(10, 20, 60);
+                lightTileColor = Color.rgb(40, 80, 120);
+                fishColor = Color.AQUA;
+                crabColor = Color.ORANGE;
+            }
+            case DEEP -> {
+                wallColor = Color.rgb(10, 10, 20);
+                emptyColor = Color.rgb(2, 2, 10);
+                darkTileColor = Color.rgb(8, 8, 30);
+                lightTileColor = Color.rgb(30, 30, 80);
+                fishColor = Color.TURQUOISE;
+                crabColor = Color.MAGENTA;
+            }
+            default -> {
+                wallColor = Color.DARKSLATEGRAY;
+                emptyColor = Color.rgb(15, 15, 25);
+                darkTileColor = Color.rgb(30, 30, 50);
+                lightTileColor = Color.rgb(70, 70, 100);
+                fishColor = Color.CORNFLOWERBLUE;
+                crabColor = Color.CRIMSON;
+            }
+        }
+
         PlayerRole role = viewState.getLocalRole();
         boolean isCrab = (role == PlayerRole.CRAB);
 
@@ -125,7 +161,7 @@ public class GameCanvas extends Canvas {
 
                 switch (tile) {
                     case WALL -> {
-                        gc.setFill(Color.DARKSLATEGRAY);
+                        gc.setFill(wallColor);
                         gc.fillRect(px, py, tileSize, tileSize);
                     }
                     case EXIT -> {
@@ -144,15 +180,15 @@ public class GameCanvas extends Canvas {
                                 tileSize * 0.5, tileSize * 0.5);
                     }
                     case LIGHT_TILE -> {
-                        gc.setFill(Color.rgb(70, 70, 100));
+                        gc.setFill(lightTileColor);
                         gc.fillRect(px, py, tileSize, tileSize);
                     }
                     case DARK_TILE -> {
-                        gc.setFill(Color.rgb(30, 30, 50));
+                        gc.setFill(darkTileColor);
                         gc.fillRect(px, py, tileSize, tileSize);
                     }
                     case EMPTY -> {
-                        gc.setFill(Color.rgb(15, 15, 25));
+                        gc.setFill(emptyColor);
                         gc.fillRect(px, py, tileSize, tileSize);
                     }
                 }
@@ -214,7 +250,7 @@ public class GameCanvas extends Canvas {
             if (!isCrab || lit) {
                 double r = tileSize * 0.4;
 
-                gc.setFill(Color.CORNFLOWERBLUE);
+                gc.setFill(fishColor);
                 gc.fillOval(fishScreenX - r, fishScreenY - r, r * 2, r * 2);
             }
         }
@@ -225,7 +261,7 @@ public class GameCanvas extends Canvas {
             if (!isCrab || lit) {
                 double s = tileSize * 0.8;
 
-                gc.setFill(Color.CRIMSON);
+                gc.setFill(crabColor);
                 gc.fillRect(crabScreenX - s / 2.0, crabScreenY - s / 2.0, s, s);
             }
         }

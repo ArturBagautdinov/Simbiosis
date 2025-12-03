@@ -22,6 +22,8 @@ public class ViewState {
     private List<GameObject> objects = new ArrayList<>();
     private volatile boolean levelCompleted;
 
+    private volatile SkinTheme skinTheme = SkinTheme.CLASSIC;
+
     public Position getFishPosition() {
         return fishPosition;
     }
@@ -104,5 +106,13 @@ public class ViewState {
 
     public void setLevelCompleted(boolean levelCompleted) {
         this.levelCompleted = levelCompleted;
+    }
+
+    public SkinTheme getSkinTheme() {
+        return skinTheme;
+    }
+
+    public void setSkinTheme(SkinTheme skinTheme) {
+        this.skinTheme = skinTheme;
     }
 }

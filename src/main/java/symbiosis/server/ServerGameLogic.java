@@ -13,7 +13,6 @@ public class ServerGameLogic {
     private ClientHandler fishClient;
     private ClientHandler crabClient;
 
-    // набор уровней
     private final String[][] levels;
     private int currentLevelIndex = 0;
 
@@ -121,7 +120,6 @@ public class ServerGameLogic {
             Player crab = new Player(handler.getClientId(), msg.getPlayerName(),
                     role, new Position(2, 5));
             gameState.setCrab(crab);
-            crabClient = handler;
         } else {
             handler.send(new ErrorMessage("FULL", "Server already has two players"));
             return;
@@ -144,7 +142,6 @@ public class ServerGameLogic {
         Player p = findPlayerById(msg.getClientId());
         if (p == null) return;
 
-        // если уровень пройден, ACTION управляет уровнем
         if (msg.getInputType() == InputMessage.InputType.ACTION && gameState.isLevelCompleted()) {
             handlePostWinAction(p);
             return;
@@ -180,21 +177,22 @@ public class ServerGameLogic {
         int targetX = x + dx;
         int targetY = y + dy;
 
-        if (!isWalkable(targetX, targetY)) {
-            if (p.getRole() == PlayerRole.CRAB) {
-                GameObject box = findObjectAt(targetX, targetY, ObjectType.BOX);
-                if (box != null) {
-                    int boxTargetX = targetX + dx;
-                    int boxTargetY = targetY + dy;
-                    if (isWalkable(boxTargetX, boxTargetY)
-                            && !isObjectBlocking(boxTargetX, boxTargetY)) {
-                        box.setPosition(new Position(boxTargetX, boxTargetY));
-                        p.setPosition(new Position(targetX, targetY));
-                    }
-                }
+        GameObject boxAtTarget = findObjectAt(targetX, targetY, ObjectType.BOX);
+
+        if (boxAtTarget != null && p.getRole() == PlayerRole.CRAB) {
+            // Краб пытается толкнуть ящик
+            int boxTargetX = targetX + dx;
+            int boxTargetY = targetY + dy;
+
+            if (isWalkable(boxTargetX, boxTargetY)
+                    && !isObjectBlocking(boxTargetX, boxTargetY)) {
+                // двигаем ящик и краба
+                boxAtTarget.setPosition(new Position(boxTargetX, boxTargetY));
+                p.setPosition(new Position(targetX, targetY));
             }
         } else {
-            if (!isObjectBlocking(targetX, targetY)) {
+            // Обычное движение (если нет ящика или это не краб)
+            if (isWalkable(targetX, targetY) && !isObjectBlocking(targetX, targetY)) {
                 p.setPosition(new Position(targetX, targetY));
                 if (p.getRole() == PlayerRole.FISH) {
                     activateMushroomAt(targetX, targetY);
@@ -300,13 +298,13 @@ public class ServerGameLogic {
     private void recreatePlayersAfterLevelChange() {
         if (fishClient != null) {
             String id = fishClient.getClientId();
-            String name = (gameState.getFish() != null ? gameState.getFish().getName() : "Fish");
+            String name = "Fish";
             Player fish = new Player(id, name, PlayerRole.FISH, new Position(1, 1));
             gameState.setFish(fish);
         }
         if (crabClient != null) {
             String id = crabClient.getClientId();
-            String name = (gameState.getCrab() != null ? gameState.getCrab().getName() : "Crab");
+            String name = "Crab";
             Player crab = new Player(id, name, PlayerRole.CRAB, new Position(2, 5));
             gameState.setCrab(crab);
         }
@@ -356,12 +354,12 @@ public class ServerGameLogic {
                     case ROCK -> 'R';
                 };
                 sb.append(t)
-                  .append(",")
-                  .append(obj.getPosition().getX())
-                  .append(",")
-                  .append(obj.getPosition().getY())
-                  .append(",")
-                  .append(obj.isActive() ? "1" : "0");
+                        .append(",")
+                        .append(obj.getPosition().getX())
+                        .append(",")
+                        .append(obj.getPosition().getY())
+                        .append(",")
+                        .append(obj.isActive() ? "1" : "0");
             }
         }
 
