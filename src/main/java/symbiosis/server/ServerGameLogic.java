@@ -180,18 +180,15 @@ public class ServerGameLogic {
         GameObject boxAtTarget = findObjectAt(targetX, targetY, ObjectType.BOX);
 
         if (boxAtTarget != null && p.getRole() == PlayerRole.CRAB) {
-            // Краб пытается толкнуть ящик
             int boxTargetX = targetX + dx;
             int boxTargetY = targetY + dy;
 
             if (isWalkable(boxTargetX, boxTargetY)
                     && !isObjectBlocking(boxTargetX, boxTargetY)) {
-                // двигаем ящик и краба
                 boxAtTarget.setPosition(new Position(boxTargetX, boxTargetY));
                 p.setPosition(new Position(targetX, targetY));
             }
         } else {
-            // Обычное движение (если нет ящика или это не краб)
             if (isWalkable(targetX, targetY) && !isObjectBlocking(targetX, targetY)) {
                 p.setPosition(new Position(targetX, targetY));
                 if (p.getRole() == PlayerRole.FISH) {

@@ -6,7 +6,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import symbiosis.common.model.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GameCanvas extends Canvas {
 
@@ -17,11 +19,15 @@ public class GameCanvas extends Canvas {
     private final int mushroomLightRadiusTiles = 3;
 
     private double animTime = 0.0;
+    private double lastDt = 0.016;
 
     private Double fishScreenX = null;
     private Double fishScreenY = null;
     private Double crabScreenX = null;
     private Double crabScreenY = null;
+
+    private final Map<Integer, Double> boxScreenX = new HashMap<>();
+    private final Map<Integer, Double> boxScreenY = new HashMap<>();
 
     private final AnimationTimer timer;
 
@@ -42,6 +48,7 @@ public class GameCanvas extends Canvas {
                 lastTime = now;
 
                 animTime += dt;
+                lastDt = dt;
                 updatePositions(dt);
                 render();
             }
@@ -104,7 +111,6 @@ public class GameCanvas extends Canvas {
             return;
         }
 
-        // цвета в зависимости от темы
         SkinTheme theme = viewState.getSkinTheme();
         Color wallColor;
         Color emptyColor;
@@ -199,7 +205,8 @@ public class GameCanvas extends Canvas {
         }
 
         if (objects != null) {
-            for (GameObject obj : objects) {
+            for (int i = 0; i < objects.size(); i++) {
+                GameObject obj = objects.get(i);
                 Position op = obj.getPosition();
                 int ox = op.getX();
                 int oy = op.getY();
@@ -212,9 +219,31 @@ public class GameCanvas extends Canvas {
 
                 switch (obj.getType()) {
                     case BOX -> {
+                        double targetX = px + tileSize / 2.0;
+                        double targetY = py + tileSize / 2.0;
+
+                        Double sx = boxScreenX.get(i);
+                        Double sy = boxScreenY.get(i);
+
+                        if (sx == null || sy == null) {
+                            sx = targetX;
+                            sy = targetY;
+                        } else {
+                            double lerpFactor = 10.0 * lastDt;
+                            lerpFactor = Math.min(1.0, lerpFactor);
+                            sx = sx + (targetX - sx) * lerpFactor;
+                            sy = sy + (targetY - sy) * lerpFactor;
+                        }
+
+                        boxScreenX.put(i, sx);
+                        boxScreenY.put(i, sy);
+
+                        double size = tileSize * 0.8;
+                        double drawX = sx - size / 2.0;
+                        double drawY = sy - size / 2.0;
+
                         gc.setFill(Color.SADDLEBROWN);
-                        gc.fillRect(px + tileSize * 0.1, py + tileSize * 0.1,
-                                tileSize * 0.8, tileSize * 0.8);
+                        gc.fillRect(drawX, drawY, size, size);
                     }
                     case ROCK -> {
                         gc.setFill(Color.GRAY);
@@ -254,7 +283,6 @@ public class GameCanvas extends Canvas {
                 gc.fillOval(fishScreenX - r, fishScreenY - r, r * 2, r * 2);
             }
         }
-
         Position crab = viewState.getCrabPosition();
         if (crab != null && crabScreenX != null && crabScreenY != null) {
             boolean lit = !isCrab || isTileLitForCrab(crab.getX(), crab.getY(), fishPos, objects);

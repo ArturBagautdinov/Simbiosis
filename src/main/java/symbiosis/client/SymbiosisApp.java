@@ -104,7 +104,7 @@ public class SymbiosisApp extends Application {
 
             if (type != null) {
                 sendInput(type);
-                event.consume(); // чтобы WASD не печатались в чат и поля
+                event.consume();
             }
         });
 
