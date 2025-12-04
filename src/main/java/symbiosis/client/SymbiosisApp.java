@@ -6,6 +6,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -13,9 +14,9 @@ import javafx.stage.Stage;
 import symbiosis.client.net.GameClient;
 import symbiosis.client.ui.CompassView;
 import symbiosis.client.ui.GameCanvas;
-import symbiosis.client.ui.ViewState;
 import symbiosis.client.ui.SkinTheme;
 import symbiosis.client.ui.SoundManager;
+import symbiosis.client.ui.ViewState;
 import symbiosis.common.model.*;
 import symbiosis.common.net.*;
 
@@ -50,6 +51,9 @@ public class SymbiosisApp extends Application {
     private int port;
     private String playerName;
 
+    private String preferredRoleString = null;
+    private int preferredLevelIndex = -1;
+
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Symbiosis");
@@ -64,6 +68,10 @@ public class SymbiosisApp extends Application {
         Scene scene = new Scene(root, 980, 750);
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        root.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, #020b1b, #041932, #030b20);"
+        );
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (client == null) return;
@@ -107,35 +115,135 @@ public class SymbiosisApp extends Application {
                 event.consume();
             }
         });
-
     }
 
     private Pane createMenuPane() {
-        VBox menu = new VBox(10);
-        menu.setPadding(new Insets(20));
-        menu.setAlignment(Pos.CENTER);
+        StackPane rootPane = new StackPane();
+        rootPane.setPadding(new Insets(20));
+
+        VBox menuCard = new VBox(15);
+        menuCard.setAlignment(Pos.CENTER);
+        menuCard.setPadding(new Insets(20));
+        menuCard.setMaxWidth(360);
+
+        menuCard.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(10, 20, 40, 0.92),
+                        new CornerRadii(18),
+                        Insets.EMPTY
+                )
+        ));
+        menuCard.setBorder(new Border(new BorderStroke(
+                Color.rgb(80, 150, 255, 0.6),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(18),
+                new BorderWidths(2)
+        )));
+
+        DropShadow shadow = new DropShadow();
+        shadow.setRadius(20);
+        shadow.setOffsetX(0);
+        shadow.setOffsetY(8);
+        shadow.setColor(Color.color(0, 0, 0, 0.7));
+        menuCard.setEffect(shadow);
 
         Label title = new Label("Symbiosis");
-        title.setStyle("-fx-font-size: 32px; -fx-font-weight: bold;");
+        title.setTextFill(Color.web("#7fd4ff"));
+        title.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-letter-spacing: 1px;");
+
+        Label subtitle = new Label("co-op underwater puzzle");
+        subtitle.setTextFill(Color.web("#9fb5ff"));
+        subtitle.setStyle("-fx-font-size: 13px; -fx-opacity: 0.8;");
 
         TextField hostField = new TextField("localhost");
         TextField portField = new TextField("5555");
         TextField nameField = new TextField("Player");
 
-        hostField.setMaxWidth(200);
-        portField.setMaxWidth(200);
-        nameField.setMaxWidth(200);
+        hostField.setMaxWidth(220);
+        portField.setMaxWidth(220);
+        nameField.setMaxWidth(220);
+
+        String tfStyle =
+                "-fx-background-radius: 10;" +
+                        "-fx-background-color: rgba(9,16,35,0.95);" +
+                        "-fx-text-fill: #e7f5ff;" +
+                        "-fx-prompt-text-fill: #9abfff;" +
+                        "-fx-border-color: #3b5a97;" +
+                        "-fx-border-radius: 10;";
+        hostField.setStyle(tfStyle);
+        portField.setStyle(tfStyle);
+        nameField.setStyle(tfStyle);
 
         ComboBox<SkinTheme> skinBox = new ComboBox<>();
         skinBox.getItems().addAll(SkinTheme.CLASSIC, SkinTheme.OCEAN, SkinTheme.DEEP);
         skinBox.setValue(SkinTheme.CLASSIC);
-        skinBox.setMaxWidth(200);
+        skinBox.setMaxWidth(220);
 
-        Label skinLabel = new Label("Skin theme:");
+        ComboBox<String> roleBox = new ComboBox<>();
+        roleBox.getItems().addAll("Auto", "Fish", "Crab");
+        roleBox.setValue("Auto");
+        roleBox.setMaxWidth(220);
 
-        Button startButton = new Button("Start Game");
+        ComboBox<String> levelBox = new ComboBox<>();
+        levelBox.getItems().addAll("Level 1", "Level 2");
+        levelBox.setValue("Level 1");
+        levelBox.setMaxWidth(220);
+
+        String cbStyle =
+                "-fx-background-radius: 10;" +
+                        "-fx-background-color: rgba(9,16,35,0.95);" +
+                        "-fx-text-fill: #e7f5ff;" +
+                        "-fx-border-color: #3b5a97;" +
+                        "-fx-border-radius: 10;";
+        skinBox.setStyle(cbStyle);
+        roleBox.setStyle(cbStyle);
+        levelBox.setStyle(cbStyle);
+
+        Label skinLabel = new Label("Skin theme");
+        Label roleLabel = new Label("Role");
+        Label levelLabel = new Label("Start level");
+
+
+        for (Label l : new Label[]{skinLabel, roleLabel, levelLabel}) {
+            l.setTextFill(Color.web("#e9f3ff"));
+            l.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+        }
+
+        Button startButton = new Button("Start game");
+        startButton.setPrefWidth(220);
+        startButton.setStyle(
+                "-fx-background-radius: 20;" +
+                        "-fx-background-color: linear-gradient(to right, #29b6f6, #2962ff);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-padding: 8 18 8 18;"
+        );
+        startButton.setOnMouseEntered(e ->
+                startButton.setStyle(
+                        "-fx-background-radius: 20;" +
+                                "-fx-background-color: linear-gradient(to right, #40c4ff, #3d73ff);" +
+                                "-fx-text-fill: white;" +
+                                "-fx-font-weight: bold;" +
+                                "-fx-font-size: 14px;" +
+                                "-fx-padding: 8 18 8 18;" +
+                                "-fx-effect: dropshadow(gaussian, rgba(64,196,255,0.6), 12, 0.2, 0, 0);"
+                )
+        );
+        startButton.setOnMouseExited(e ->
+                startButton.setStyle(
+                        "-fx-background-radius: 20;" +
+                                "-fx-background-color: linear-gradient(to right, #29b6f6, #2962ff);" +
+                                "-fx-text-fill: white;" +
+                                "-fx-font-weight: bold;" +
+                                "-fx-font-size: 14px;" +
+                                "-fx-padding: 8 18 8 18;"
+                )
+        );
+
         Label statusLabel = new Label();
-        statusLabel.setTextFill(Color.ORANGE);
+        statusLabel.setTextFill(Color.web("#ffd49e"));
+        statusLabel.setStyle("-fx-font-size: 13px; -fx-effect: dropshadow(gaussian, rgba(255,212,158,0.6), 8,0.3,0,0);");
 
         startButton.setOnAction(e -> {
             host = hostField.getText().trim();
@@ -153,20 +261,56 @@ public class SymbiosisApp extends Application {
             }
 
             viewState.setSkinTheme(skinBox.getValue());
+
+            String roleChoice = roleBox.getValue();
+            if ("Fish".equalsIgnoreCase(roleChoice)) {
+                preferredRoleString = "FISH";
+            } else if ("Crab".equalsIgnoreCase(roleChoice)) {
+                preferredRoleString = "CRAB";
+            } else {
+                preferredRoleString = null;
+            }
+
+            int levelIdx = levelBox.getSelectionModel().getSelectedIndex(); // 0 или 1
+            preferredLevelIndex = levelIdx;
+
             statusLabel.setText("Connecting...");
-            connectToServer(host, port, playerName, statusLabel);
+            connectToServer(host, port, playerName, preferredRoleString, preferredLevelIndex, statusLabel);
         });
 
-        VBox fields = new VBox(5,
-                new Label("Host:"), hostField,
-                new Label("Port:"), portField,
-                new Label("Name:"), nameField,
-                skinLabel, skinBox
+        VBox fields = new VBox(6,
+                new Label("Host"), hostField,
+                new Label("Port"), portField,
+                new Label("Name"), nameField,
+                skinLabel, skinBox,
+                roleLabel, roleBox,
+                levelLabel, levelBox
         );
+
+        for (int i = 0; i < fields.getChildren().size(); i++) {
+            if (fields.getChildren().get(i) instanceof Label l &&
+                    l != skinLabel && l != roleLabel && l != levelLabel) {
+
+                l.setTextFill(Color.web("#d4e6ff"));
+                l.setStyle("-fx-font-size: 12px; -fx-opacity: 1.0;");
+            }
+        }
         fields.setAlignment(Pos.CENTER_LEFT);
 
-        menu.getChildren().addAll(title, fields, startButton, statusLabel);
-        return menu;
+        VBox titleBox = new VBox(2, title, subtitle);
+        titleBox.setAlignment(Pos.CENTER);
+
+        menuCard.getChildren().addAll(
+                titleBox,
+                fields,
+                startButton,
+                statusLabel
+        );
+
+        rootPane.getChildren().add(menuCard);
+        StackPane.setAlignment(menuCard, Pos.CENTER);
+
+        return rootPane;
     }
 
     private BorderPane createGamePane() {
@@ -256,7 +400,12 @@ public class SymbiosisApp extends Application {
         return gameRoot;
     }
 
-    private void connectToServer(String host, int port, String playerName, Label statusLabel) {
+    private void connectToServer(String host,
+                                 int port,
+                                 String playerName,
+                                 String preferredRoleString,
+                                 int preferredLevelIndex,
+                                 Label statusLabel) {
         if (client != null) {
             statusLabel.setText("Already connected (or connecting)");
             return;
@@ -271,7 +420,8 @@ public class SymbiosisApp extends Application {
                         Platform.runLater(() -> handleServerMessage(msg))
                 );
                 gameClient.connect();
-                gameClient.send(new JoinMessage(playerName));
+
+                gameClient.send(new JoinMessage(playerName, preferredRoleString, preferredLevelIndex));
 
                 Platform.runLater(() -> {
                     this.client = gameClient;

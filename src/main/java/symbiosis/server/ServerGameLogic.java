@@ -107,27 +107,58 @@ public class ServerGameLogic {
     }
 
     public synchronized void handleJoin(ClientHandler handler, JoinMessage msg) {
-        PlayerRole role;
-        if (fishClient == null) {
+        String name = msg.getPlayerName();
+
+        if (fishClient == null && crabClient == null) {
+            int prefLevel = msg.getPreferredLevel();
+            if (prefLevel >= 0 && prefLevel < levels.length) {
+                currentLevelIndex = prefLevel;
+                this.gameState = loadLevel(currentLevelIndex);
+            }
+        }
+
+        String prefRoleStr = msg.getPreferredRole();
+        PlayerRole requested = null;
+        if (prefRoleStr != null) {
+            if ("FISH".equalsIgnoreCase(prefRoleStr)) {
+                requested = PlayerRole.FISH;
+            } else if ("CRAB".equalsIgnoreCase(prefRoleStr)) {
+                requested = PlayerRole.CRAB;
+            }
+        }
+
+        PlayerRole assignedRole;
+
+        if (requested == PlayerRole.FISH && fishClient == null) {
+            assignedRole = PlayerRole.FISH;
             fishClient = handler;
-            role = PlayerRole.FISH;
-            Player fish = new Player(handler.getClientId(), msg.getPlayerName(),
-                    role, new Position(1, 1));
-            gameState.setFish(fish);
-        } else if (crabClient == null) {
+        } else if (requested == PlayerRole.CRAB && crabClient == null) {
+            assignedRole = PlayerRole.CRAB;
             crabClient = handler;
-            role = PlayerRole.CRAB;
-            Player crab = new Player(handler.getClientId(), msg.getPlayerName(),
-                    role, new Position(2, 5));
-            gameState.setCrab(crab);
         } else {
-            handler.send(new ErrorMessage("FULL", "Server already has two players"));
-            return;
+            if (fishClient == null) {
+                assignedRole = PlayerRole.FISH;
+                fishClient = handler;
+            } else if (crabClient == null) {
+                assignedRole = PlayerRole.CRAB;
+                crabClient = handler;
+            } else {
+                handler.send(new ErrorMessage("FULL", "Server already has two players"));
+                return;
+            }
+        }
+
+        if (assignedRole == PlayerRole.FISH) {
+            Player fish = new Player(handler.getClientId(), name, assignedRole, new Position(1, 1));
+            gameState.setFish(fish);
+        } else {
+            Player crab = new Player(handler.getClientId(), name, assignedRole, new Position(2, 5));
+            gameState.setCrab(crab);
         }
 
         placePlayersForCurrentLevel();
 
-        handler.send(new RoleAssignedMessage(handler.getClientId(), role.name()));
+        handler.send(new RoleAssignedMessage(handler.getClientId(), assignedRole.name()));
 
         handler.send(new LevelDataMessage(
                 gameState.getMap().getWidth(),
@@ -137,6 +168,7 @@ public class ServerGameLogic {
 
         broadcastState();
     }
+
 
     public synchronized void handleInput(InputMessage msg) {
         Player p = findPlayerById(msg.getClientId());

@@ -12,8 +12,18 @@ public class ProtocolDecoder {
 
         return switch (typeStr) {
             case "JOIN" -> {
-                if (parts.length < 2) throw new IllegalArgumentException("Invalid JOIN");
-                yield new JoinMessage(unescape(parts[1]));
+                String name = parts.length > 1 ? unescape(parts[1]) : "Player";
+                String prefRole = null;
+                if (parts.length > 2 && !parts[2].isEmpty()) {
+                    prefRole = parts[2];
+                }
+                int prefLevel = -1;
+                if (parts.length > 3 && !parts[3].isEmpty()) {
+                    try {
+                        prefLevel = Integer.parseInt(parts[3]);
+                    } catch (NumberFormatException ignored) {}
+                }
+                yield new JoinMessage(name, prefRole, prefLevel);
             }
             case "CHAT" -> {
                 if (parts.length < 3) throw new IllegalArgumentException("Invalid CHAT");
