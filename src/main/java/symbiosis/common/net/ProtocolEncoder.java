@@ -6,7 +6,13 @@ public class ProtocolEncoder {
         switch (msg.getType()) {
             case JOIN -> {
                 JoinMessage m = (JoinMessage) msg;
-                return "JOIN|" + escape(m.getPlayerName());
+                String role = m.getPreferredRole() != null ? m.getPreferredRole() : "";
+                String levelStr = m.getPreferredLevel() >= 0
+                        ? Integer.toString(m.getPreferredLevel())
+                        : "";
+                return "JOIN|" + escape(m.getPlayerName())
+                        + "|" + escape(role)
+                        + "|" + levelStr;
             }
             case CHAT -> {
                 ChatMessage m = (ChatMessage) msg;
@@ -30,11 +36,12 @@ public class ProtocolEncoder {
             }
             case LEVEL_DATA -> {
                 LevelDataMessage m = (LevelDataMessage) msg;
+
                 StringBuilder sb = new StringBuilder();
                 sb.append("LEVEL_DATA|")
-                  .append(m.getWidth())
-                  .append("|")
-                  .append(m.getHeight());
+                        .append(m.getWidth())
+                        .append("|")
+                        .append(m.getHeight());
                 for (String row : m.getRows()) {
                     sb.append("|").append(row);
                 }

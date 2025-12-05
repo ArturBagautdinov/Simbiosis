@@ -106,6 +106,17 @@ public class ServerGameLogic {
         }
     }
 
+    public synchronized void handleDisconnect(ClientHandler handler) {
+        if (handler == fishClient) {
+            fishClient = null;
+            gameState.setFish(null);
+        }
+        if (handler == crabClient) {
+            crabClient = null;
+            gameState.setCrab(null);
+        }
+    }
+
     public synchronized void handleJoin(ClientHandler handler, JoinMessage msg) {
         String name = msg.getPlayerName();
 
@@ -114,6 +125,10 @@ public class ServerGameLogic {
             if (prefLevel >= 0 && prefLevel < levels.length) {
                 currentLevelIndex = prefLevel;
                 this.gameState = loadLevel(currentLevelIndex);
+                System.out.println("Starting level set from JOIN: " + currentLevelIndex);
+            } else {
+                System.out.println("JOIN preferredLevel invalid (" + prefLevel +
+                        "), using currentLevelIndex=" + currentLevelIndex);
             }
         }
 
@@ -168,7 +183,6 @@ public class ServerGameLogic {
 
         broadcastState();
     }
-
 
     public synchronized void handleInput(InputMessage msg) {
         Player p = findPlayerById(msg.getClientId());
