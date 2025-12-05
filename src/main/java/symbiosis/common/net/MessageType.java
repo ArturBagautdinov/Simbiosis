@@ -7,5 +7,6 @@ public enum MessageType {
     CHAT,
     ROLE_ASSIGNED,
     ERROR,
-    LEVEL_DATA
+    LEVEL_DATA,
+    LEVEL_VOTE
 }

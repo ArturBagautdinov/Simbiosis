@@ -62,6 +62,20 @@ public class ProtocolDecoder {
                 }
                 yield new LevelDataMessage(width, height, rows);
             }
+            case "LEVEL_VOTE" -> {
+                if (parts.length < 3) {
+                    throw new IllegalArgumentException("Invalid LEVEL_VOTE");
+                }
+                String clientId = unescape(parts[1]);
+                String raw = parts[2];
+                int idx;
+                if ("AUTO".equalsIgnoreCase(raw)) {
+                    idx = -1;
+                } else {
+                    idx = Integer.parseInt(raw);
+                }
+                yield new LevelVoteMessage(clientId, idx);
+            }
             default -> throw new IllegalArgumentException("Unknown message type: " + typeStr);
         };
     }

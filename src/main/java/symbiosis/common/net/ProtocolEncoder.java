@@ -47,6 +47,13 @@ public class ProtocolEncoder {
                 }
                 return sb.toString();
             }
+            case LEVEL_VOTE -> {
+                LevelVoteMessage m = (LevelVoteMessage) msg;
+                String lvl = m.getLevelIndex() == -1
+                        ? "AUTO"
+                        : Integer.toString(m.getLevelIndex());
+                return "LEVEL_VOTE|" + escape(m.getClientId()) + "|" + lvl;
+            }
             default -> throw new IllegalArgumentException("Unknown message type: " + msg.getType());
         }
     }

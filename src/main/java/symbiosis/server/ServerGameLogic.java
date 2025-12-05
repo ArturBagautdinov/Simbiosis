@@ -16,6 +16,9 @@ public class ServerGameLogic {
     private final String[][] levels;
     private int currentLevelIndex = 0;
 
+    private Integer fishVote = null;
+    private Integer crabVote = null;
+
     public ServerGameLogic(GameServer server) {
         this.server = server;
 
@@ -30,7 +33,6 @@ public class ServerGameLogic {
                 "############"
         };
 
-        // LEVEL 1 – немного сложнее
         String[] level1 = new String[]{
                 "############",
                 "#..M....B..#",
@@ -140,24 +142,7 @@ public class ServerGameLogic {
 
     private void placePlayersForCurrentLevel() {
         if (gameState.getFish() != null) {
-            Position fishPos;
-
-            if (currentLevelIndex == 0) {
-                fishPos = new Position(1, 1);
-            } else if (currentLevelIndex == 1) {
-                fishPos = new Position(1, 1);
-            } else if (currentLevelIndex == 2) {
-                fishPos = new Position(1, 1);
-            } else if (currentLevelIndex == 3) {
-                fishPos = new Position(1, 1);
-            } else if (currentLevelIndex == 4) {
-                fishPos = new Position(1, 1);
-            } else if (currentLevelIndex == 5) {
-                fishPos = new Position(1, 1);
-            } else {
-                fishPos = new Position(1, 1);
-            }
-
+            Position fishPos = new Position(1, 1);
             gameState.getFish().setPosition(fishPos);
         }
 
@@ -314,22 +299,82 @@ public class ServerGameLogic {
         broadcast(msg);
     }
 
+    public synchronized void handleLevelVote(ClientHandler handler, LevelVoteMessage vote) {
+        int idx = vote.getLevelIndex();
+
+        if (!gameState.isLevelCompleted()) {
+            handler.send(new ErrorMessage("VOTE_DENIED", "Голосовать можно только после победы"));
+            return;
+        }
+
+        if (idx < -1 || idx >= levels.length) {
+            handler.send(new ErrorMessage("BAD_VOTE", "Некорректный выбор уровня"));
+            return;
+        }
+
+        if (handler == fishClient) {
+            fishVote = idx;
+            System.out.println("Fish voted for " + (idx == -1 ? "AUTO" : ("level " + idx)));
+        } else if (handler == crabClient) {
+            crabVote = idx;
+            System.out.println("Crab voted for " + (idx == -1 ? "AUTO" : ("level " + idx)));
+        } else {
+            return;
+        }
+
+        if (fishVote != null && crabVote != null) {
+            if (fishVote.equals(crabVote)) {
+                int chosen = fishVote;
+
+                int targetLevel;
+                if (chosen == -1) {
+                    targetLevel = (currentLevelIndex + 1) % levels.length;
+                } else {
+                    targetLevel = chosen;
+                }
+
+                currentLevelIndex = targetLevel;
+                this.gameState = loadLevel(currentLevelIndex);
+                recreatePlayersAfterLevelChange();
+                placePlayersForCurrentLevel();
+                clearVotes();
+                broadcastLevelDataToAll();
+                broadcastState();
+                System.out.println("VOTE AGREED: start level " + currentLevelIndex);
+            } else {
+                broadcast(new ErrorMessage(
+                        "VOTE_FAIL",
+                        "Оба игрока должны выбрать один и тот же вариант (Auto или один и тот же уровень)"
+                ));
+                clearVotes();
+                System.out.println("VOTE CONFLICT: fish=" + fishVote + ", crab=" + crabVote);
+            }
+        }
+    }
+
+    private void clearVotes() {
+        fishVote = null;
+        crabVote = null;
+    }
+
     private void handlePostWinAction(Player player) {
         if (player.getRole() == PlayerRole.FISH) {
             currentLevelIndex = (currentLevelIndex + 1) % levels.length;
             this.gameState = loadLevel(currentLevelIndex);
             recreatePlayersAfterLevelChange();
             placePlayersForCurrentLevel();
+            clearVotes();
             broadcastLevelDataToAll();
             broadcastState();
-            System.out.println("Next level: " + currentLevelIndex);
+            System.out.println("Next level (fallback): " + currentLevelIndex);
         } else if (player.getRole() == PlayerRole.CRAB) {
             this.gameState = loadLevel(currentLevelIndex);
             recreatePlayersAfterLevelChange();
             placePlayersForCurrentLevel();
+            clearVotes();
             broadcastLevelDataToAll();
             broadcastState();
-            System.out.println("Restart level: " + currentLevelIndex);
+            System.out.println("Restart level (fallback): " + currentLevelIndex);
         }
     }
 
@@ -387,6 +432,7 @@ public class ServerGameLogic {
 
         if (tf == TileType.EXIT && tc == TileType.EXIT) {
             gameState.setLevelCompleted(true);
+            clearVotes();
             System.out.println("LEVEL COMPLETED!");
         }
     }
@@ -483,6 +529,34 @@ public class ServerGameLogic {
             for (ClientHandler c : clients) {
                 c.send(msg);
             }
+        }
+    }
+
+    public synchronized void handleDisconnect(ClientHandler handler) {
+        boolean roleChanged = false;
+
+        if (fishClient == handler) {
+            fishClient = null;
+            if (gameState.getFish() != null) {
+                gameState.setFish(null);
+            }
+            fishVote = null;
+            roleChanged = true;
+            System.out.println("Fish disconnected");
+        }
+
+        if (crabClient == handler) {
+            crabClient = null;
+            if (gameState.getCrab() != null) {
+                gameState.setCrab(null);
+            }
+            crabVote = null;
+            roleChanged = true;
+            System.out.println("Crab disconnected");
+        }
+
+        if (roleChanged) {
+            broadcast(new ErrorMessage("PLAYER_LEFT", "Другой игрок отключился"));
         }
     }
 }

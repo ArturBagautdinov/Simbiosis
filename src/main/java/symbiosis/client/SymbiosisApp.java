@@ -315,15 +315,9 @@ public class SymbiosisApp extends Application {
                     setText(null);
                 } else {
                     switch (item) {
-                        case "Fish":
-                            setText("🐟 Fish");
-                            break;
-                        case "Crab":
-                            setText("🦀 Crab");
-                            break;
-                        default:
-                            setText("🎲 Auto");
-                            break;
+                        case "Fish" -> setText("🐟 Fish");
+                        case "Crab" -> setText("🦀 Crab");
+                        default -> setText("🎲 Auto");
                     }
                 }
             }
@@ -787,8 +781,7 @@ public class SymbiosisApp extends Application {
     }
 
     private void handleServerMessage(Message msg) {
-        if (msg instanceof RoleAssignedMessage) {
-            RoleAssignedMessage roleMsg = (RoleAssignedMessage) msg;
+        if (msg instanceof RoleAssignedMessage roleMsg) {
             viewState.setClientId(roleMsg.getPlayerId());
             PlayerRole role = PlayerRole.valueOf(roleMsg.getRole());
             viewState.setLocalRole(role);
@@ -802,24 +795,15 @@ public class SymbiosisApp extends Application {
                 gamePane.setVisible(true);
             }
 
-            String roleIcon;
-            switch (role) {
-                case FISH:
-                    roleIcon = "🐟 ";
-                    break;
-                case CRAB:
-                    roleIcon = "🦀 ";
-                    break;
-                default:
-                    roleIcon = "";
-                    break;
-            }
+            String roleIcon = switch (role) {
+                case FISH -> "🐟 ";
+                case CRAB -> "🦀 ";
+                default -> "";
+            };
             connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName + " (" + roleIcon + role + ")");
-        } else if (msg instanceof LevelDataMessage) {
-            LevelDataMessage levelMsg = (LevelDataMessage) msg;
+        } else if (msg instanceof LevelDataMessage levelMsg) {
             applyLevelData(levelMsg);
-        } else if (msg instanceof StateUpdateMessage) {
-            StateUpdateMessage stateMsg = (StateUpdateMessage) msg;
+        } else if (msg instanceof StateUpdateMessage stateMsg) {
             boolean wasCompleted = viewState.isLevelCompleted();
             parseAndApplyState(stateMsg.getPayload());
 
@@ -833,11 +817,19 @@ public class SymbiosisApp extends Application {
             } else if (!viewState.isLevelCompleted()) {
                 levelCompletedShown = false;
             }
-        } else if (msg instanceof ChatMessage) {
-            ChatMessage chatMsg = (ChatMessage) msg;
+        } else if (msg instanceof ChatMessage chatMsg) {
             appendLog(chatMsg.getFrom() + ": " + chatMsg.getText());
-        } else if (msg instanceof ErrorMessage) {
-            ErrorMessage err = (ErrorMessage) msg;
+        } else if (msg instanceof ErrorMessage err) {
+
+            // спец-обработка конфликтного голосования
+            if ("VOTE_FAIL".equals(err.getErrorCode())) {
+                Alert voteAlert = new Alert(Alert.AlertType.WARNING);
+                voteAlert.setTitle("Vote mismatch");
+                voteAlert.setHeaderText("Голосование не удалось");
+                voteAlert.setContentText("Оба игрока должны выбрать один и тот же вариант (Auto или один и тот же уровень).");
+                voteAlert.show();
+            }
+
             appendLog("ERROR " + err.getErrorCode() + ": " + err.getErrorText());
         } else {
             appendLog("Received: " + msg.getClass().getSimpleName());
@@ -845,18 +837,11 @@ public class SymbiosisApp extends Application {
     }
 
     private void updateRoleLabel(PlayerRole role) {
-        String icon;
-        switch (role) {
-            case FISH:
-                icon = "🐟 ";
-                break;
-            case CRAB:
-                icon = "🦀 ";
-                break;
-            default:
-                icon = "";
-                break;
-        }
+        String icon = switch (role) {
+            case FISH -> "🐟 ";
+            case CRAB -> "🦀 ";
+            default -> "";
+        };
         roleLabel.setText("Role: " + icon + role);
         if (role == PlayerRole.FISH) {
             roleLabel.setTextFill(Color.CORNFLOWERBLUE);
@@ -886,24 +871,19 @@ public class SymbiosisApp extends Application {
     }
 
     private TileType charToTile(char c) {
-        switch (c) {
-            case '#':
-                return TileType.WALL;
-            case 'E':
-                return TileType.EXIT;
-            case 'D':
-                return TileType.DARK_TILE;
-            case 'L':
-                return TileType.LIGHT_TILE;
-            default:
-                return TileType.EMPTY;
-        }
+        return switch (c) {
+            case '#' -> TileType.WALL;
+            case 'E' -> TileType.EXIT;
+            case 'D' -> TileType.DARK_TILE;
+            case 'L' -> TileType.LIGHT_TILE;
+            default -> TileType.EMPTY;
+        };
     }
 
     private void parseAndApplyState(String payload) {
         if (payload == null) return;
 
-        List<GameObject> objects = new java.util.ArrayList<GameObject>();
+        List<GameObject> objects = new java.util.ArrayList<>();
 
         String[] parts = payload.split(";");
         boolean levelCompleted = false;
@@ -953,15 +933,9 @@ public class SymbiosisApp extends Application {
 
                         ObjectType type = null;
                         switch (typeChar) {
-                            case 'M':
-                                type = ObjectType.MUSHROOM;
-                                break;
-                            case 'B':
-                                type = ObjectType.BOX;
-                                break;
-                            case 'R':
-                                type = ObjectType.ROCK;
-                                break;
+                            case 'M' -> type = ObjectType.MUSHROOM;
+                            case 'B' -> type = ObjectType.BOX;
+                            case 'R' -> type = ObjectType.ROCK;
                         }
                         if (type != null) {
                             GameObject obj = new GameObject(type, new Position(x, y));
@@ -1023,14 +997,59 @@ public class SymbiosisApp extends Application {
 
     private void showLevelCompletedDialog() {
         appendLog("LEVEL COMPLETED!");
-
         SoundManager.playWin();
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Symbiosis");
-        alert.setHeaderText("Level completed!");
-        alert.setContentText("Оба игрока достигли выхода. Отличная работа!");
-        alert.show();
+        Dialog<Integer> dialog = new Dialog<>();
+        dialog.setTitle("Symbiosis");
+        dialog.setHeaderText("Level completed!\nВыберите уровень для голосования");
+
+        ButtonType voteButtonType = new ButtonType("Vote", ButtonBar.ButtonData.OK_DONE);
+        ButtonType skipButtonType = new ButtonType("Skip", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(voteButtonType, skipButtonType);
+
+        ComboBox<String> levelBox = new ComboBox<>();
+        levelBox.getItems().add("Auto (next level)");
+        levelBox.getItems().addAll(
+                "Level 1",
+                "Level 2",
+                "Level 3",
+                "Level 4",
+                "Level 5",
+                "Level 6"
+        );
+        levelBox.getSelectionModel().select(0);
+
+        VBox content = new VBox(8,
+                new Label("Если оба игрока выберут один и тот же вариант (Auto или один и тот же уровень), он будет запущен."),
+                new Label("Ваш выбор:"),
+                levelBox
+        );
+        content.setPadding(new Insets(10));
+
+        dialog.getDialogPane().setContent(content);
+
+        dialog.setResultConverter(button -> {
+            if (button == voteButtonType) {
+                int selected = levelBox.getSelectionModel().getSelectedIndex();
+                if (selected == 0) {
+                    return -1;
+                } else {
+                    return selected - 1;
+                }
+            }
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(idx -> {
+            if (idx != null && client != null && viewState.getClientId() != null) {
+                client.send(new LevelVoteMessage(viewState.getClientId(), idx));
+                if (idx == -1) {
+                    appendLog("You voted: Auto (next level)");
+                } else {
+                    appendLog("You voted for Level " + (idx + 1));
+                }
+            }
+        });
     }
 
     @Override

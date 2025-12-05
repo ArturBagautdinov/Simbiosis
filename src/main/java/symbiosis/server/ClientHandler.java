@@ -60,6 +60,8 @@ public class ClientHandler implements Runnable {
             server.getGameLogic().handleInput(input);
         } else if (msg instanceof ChatMessage chat) {
             server.getGameLogic().handleChat(chat);
+        } else if (msg instanceof LevelVoteMessage vote) {
+            server.getGameLogic().handleLevelVote(this, vote);
         }
     }
 
@@ -69,7 +71,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void close() {
-        server.getGameLogic();
+        server.getGameLogic().handleDisconnect(this);
 
         server.removeClient(this);
         try {
@@ -77,5 +79,4 @@ public class ClientHandler implements Runnable {
         } catch (IOException ignored) {
         }
     }
-
 }
