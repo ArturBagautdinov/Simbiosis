@@ -1,5 +1,8 @@
 package symbiosis.client;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -11,6 +14,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import javafx.scene.control.ListCell;
+
 import symbiosis.client.net.GameClient;
 import symbiosis.client.ui.CompassView;
 import symbiosis.client.ui.GameCanvas;
@@ -124,7 +130,7 @@ public class SymbiosisApp extends Application {
         VBox menuCard = new VBox(15);
         menuCard.setAlignment(Pos.CENTER);
         menuCard.setPadding(new Insets(20));
-        menuCard.setMaxWidth(360);
+        menuCard.setMaxWidth(380);
 
         menuCard.setBackground(new Background(
                 new BackgroundFill(
@@ -144,8 +150,24 @@ public class SymbiosisApp extends Application {
         shadow.setRadius(20);
         shadow.setOffsetX(0);
         shadow.setOffsetY(8);
-        shadow.setColor(Color.color(0, 0, 0, 0.7));
+        shadow.setColor(Color.color(0.0, 0.4, 0.8, 0.65));
         menuCard.setEffect(shadow);
+
+        Timeline glow = new Timeline(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(shadow.radiusProperty(), 16),
+                        new KeyValue(shadow.colorProperty(), Color.color(0.1, 0.5, 1.0, 0.5))
+                ),
+                new KeyFrame(
+                        Duration.seconds(2),
+                        new KeyValue(shadow.radiusProperty(), 26),
+                        new KeyValue(shadow.colorProperty(), Color.color(0.4, 0.8, 1.0, 0.9))
+                )
+        );
+        glow.setAutoReverse(true);
+        glow.setCycleCount(Timeline.INDEFINITE);
+        glow.play();
 
         Label title = new Label("Symbiosis");
         title.setTextFill(Color.web("#7fd4ff"));
@@ -153,15 +175,15 @@ public class SymbiosisApp extends Application {
 
         Label subtitle = new Label("co-op underwater puzzle");
         subtitle.setTextFill(Color.web("#9fb5ff"));
-        subtitle.setStyle("-fx-font-size: 13px; -fx-opacity: 0.8;");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-opacity: 0.9;");
 
         TextField hostField = new TextField("localhost");
         TextField portField = new TextField("5555");
         TextField nameField = new TextField("Player");
 
-        hostField.setMaxWidth(220);
-        portField.setMaxWidth(220);
-        nameField.setMaxWidth(220);
+        hostField.setMaxWidth(230);
+        portField.setMaxWidth(230);
+        nameField.setMaxWidth(230);
 
         String tfStyle =
                 "-fx-background-radius: 10;" +
@@ -177,17 +199,17 @@ public class SymbiosisApp extends Application {
         ComboBox<SkinTheme> skinBox = new ComboBox<>();
         skinBox.getItems().addAll(SkinTheme.CLASSIC, SkinTheme.OCEAN, SkinTheme.DEEP);
         skinBox.setValue(SkinTheme.CLASSIC);
-        skinBox.setMaxWidth(220);
+        skinBox.setMaxWidth(230);
 
         ComboBox<String> roleBox = new ComboBox<>();
         roleBox.getItems().addAll("Auto", "Fish", "Crab");
         roleBox.setValue("Auto");
-        roleBox.setMaxWidth(220);
+        roleBox.setMaxWidth(230);
 
         ComboBox<String> levelBox = new ComboBox<>();
         levelBox.getItems().addAll("Level 1", "Level 2");
         levelBox.setValue("Level 1");
-        levelBox.setMaxWidth(220);
+        levelBox.setMaxWidth(230);
 
         String cbStyle =
                 "-fx-background-radius: 10;" +
@@ -195,22 +217,113 @@ public class SymbiosisApp extends Application {
                         "-fx-text-fill: #e7f5ff;" +
                         "-fx-border-color: #3b5a97;" +
                         "-fx-border-radius: 10;";
+
         skinBox.setStyle(cbStyle);
         roleBox.setStyle(cbStyle);
         levelBox.setStyle(cbStyle);
+
+
+        skinBox.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(SkinTheme item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+                setTextFill(Color.web("#10233d"));
+            }
+        });
+        skinBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(SkinTheme item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
+
+        roleBox.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    switch (item) {
+                        case "Fish" -> setText("🐟 Fish");
+                        case "Crab" -> setText("🦀 Crab");
+                        default -> setText("🎲 Auto");
+                    }
+                }
+                setTextFill(Color.web("#10233d"));
+            }
+        });
+
+        roleBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    switch (item) {
+                        case "Fish" -> setText("🐟 Fish");
+                        case "Crab" -> setText("🦀 Crab");
+                        default -> setText("🎲 Auto");
+                    }
+                }
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
+
+        levelBox.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                }
+                setTextFill(Color.web("#10233d"));
+            }
+        });
+
+        levelBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                }
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
+
 
         Label skinLabel = new Label("Skin theme");
         Label roleLabel = new Label("Role");
         Label levelLabel = new Label("Start level");
 
-
         for (Label l : new Label[]{skinLabel, roleLabel, levelLabel}) {
             l.setTextFill(Color.web("#e9f3ff"));
-            l.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+            l.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
         }
 
+        Label roleHint = new Label("🐟 light & vision   |   🦀 strength & crates");
+        roleHint.setTextFill(Color.web("#9fd6ff"));
+        roleHint.setStyle("-fx-font-size: 11px; -fx-opacity: 0.9;");
+
         Button startButton = new Button("Start game");
-        startButton.setPrefWidth(220);
+        startButton.setPrefWidth(230);
         startButton.setStyle(
                 "-fx-background-radius: 20;" +
                         "-fx-background-color: linear-gradient(to right, #29b6f6, #2962ff);" +
@@ -268,7 +381,7 @@ public class SymbiosisApp extends Application {
             } else if ("Crab".equalsIgnoreCase(roleChoice)) {
                 preferredRoleString = "CRAB";
             } else {
-                preferredRoleString = null;
+                preferredRoleString = null; // Auto
             }
 
             int levelIdx = levelBox.getSelectionModel().getSelectedIndex(); // 0 или 1
@@ -284,6 +397,7 @@ public class SymbiosisApp extends Application {
                 new Label("Name"), nameField,
                 skinLabel, skinBox,
                 roleLabel, roleBox,
+                roleHint,
                 levelLabel, levelBox
         );
 
@@ -313,18 +427,17 @@ public class SymbiosisApp extends Application {
         return rootPane;
     }
 
+
     private BorderPane createGamePane() {
         roleLabel = new Label("Role: —");
-        roleLabel.setTextFill(Color.LIGHTGRAY);
-
         pauseLabel = new Label("");
-        pauseLabel.setTextFill(Color.ORANGE);
-
         completedLabel = new Label("Completed: 0");
-        completedLabel.setTextFill(Color.LIGHTGREEN);
-
         connectionLabel = new Label("Not connected");
-        connectionLabel.setTextFill(Color.LIGHTGRAY);
+
+        roleLabel.setTextFill(Color.web("#e7f5ff"));
+        pauseLabel.setTextFill(Color.web("#ffcc80"));
+        completedLabel.setTextFill(Color.web("#a5ffb3"));
+        connectionLabel.setTextFill(Color.web("#b0c7ff"));
 
         HBox topBar = new HBox(15,
                 connectionLabel,
@@ -335,23 +448,58 @@ public class SymbiosisApp extends Application {
         );
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(6, 10, 22, 0.92),
+                        CornerRadii.EMPTY,
+                        Insets.EMPTY
+                )
+        ));
 
         gameCanvas = new GameCanvas(800, 600, viewState);
         compassView = new CompassView(120, viewState);
 
-        Label hudTitle = new Label("Controls:");
+        StackPane compassWrapper = new StackPane(compassView);
+        compassWrapper.setPadding(new Insets(6));
+        compassWrapper.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(5, 12, 28, 0.95),
+                        new CornerRadii(12),
+                        Insets.EMPTY
+                )
+        ));
+        compassWrapper.setBorder(new Border(new BorderStroke(
+                Color.rgb(90, 160, 255, 0.8),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(12),
+                new BorderWidths(1.5)
+        )));
+
+        Label compassTitle = new Label("Partner compass");
+        compassTitle.setTextFill(Color.web("#e9f3ff"));
+        compassTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+
+        Label hudTitle = new Label("Controls");
         Label hudMove = new Label("WASD / ↑↓←→ – движение");
         Label hudAction = new Label("Space – действие");
         Label hudRestart = new Label("R – рестарт уровня (после победы, краб)");
         Label hudNext = new Label("N – следующий уровень (после победы, рыбка)");
         Label hudGoal = new Label("Цель: оба игрока должны стоять на выходе");
-        Label hudFish = new Label("Рыбка: свет и активация грибов");
-        Label hudCrab = new Label("Краб: толкает ящики, видит только в свету");
+        Label hudFish = new Label("🐟 Рыбка: свет и активация грибов");
+        Label hudCrab = new Label("🦀 Краб: толкает ящики, видит только в свету");
         Label hudPause = new Label("ESC – пауза");
 
-        VBox hudBox = new VBox(4,
-                new Label("Partner compass:"),
-                compassView,
+        hudTitle.setTextFill(Color.web("#e9f3ff"));
+        hudTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+        for (Label l : new Label[]{hudMove, hudAction, hudRestart, hudNext, hudGoal, hudFish, hudCrab, hudPause}) {
+            l.setTextFill(Color.web("#d4e6ff"));
+            l.setStyle("-fx-font-size: 12px;");
+        }
+
+        VBox hudBox = new VBox(6,
+                compassTitle,
+                compassWrapper,
                 new Separator(),
                 hudTitle,
                 hudMove,
@@ -365,29 +513,91 @@ public class SymbiosisApp extends Application {
                 hudCrab
         );
         hudBox.setAlignment(Pos.TOP_LEFT);
-        hudBox.setPadding(new Insets(5));
+        hudBox.setPadding(new Insets(10));
         hudBox.setFillWidth(true);
+        hudBox.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(8, 16, 35, 0.94),
+                        new CornerRadii(14),
+                        Insets.EMPTY
+                )
+        ));
+        hudBox.setBorder(new Border(new BorderStroke(
+                Color.rgb(70, 120, 200, 0.7),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(14),
+                new BorderWidths(1.5)
+        )));
 
         HBox centerRow = new HBox(10);
-        centerRow.setPadding(new Insets(5));
+        centerRow.setPadding(new Insets(8));
         centerRow.setAlignment(Pos.CENTER_LEFT);
 
         StackPane canvasWrapper = new StackPane(gameCanvas);
         canvasWrapper.setPrefSize(800, 600);
+        canvasWrapper.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(3, 8, 20, 0.9),
+                        new CornerRadii(16),
+                        Insets.EMPTY
+                )
+        ));
+        canvasWrapper.setBorder(new Border(new BorderStroke(
+                Color.rgb(40, 80, 150, 0.8),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(16),
+                new BorderWidths(1.5)
+        )));
 
         centerRow.getChildren().addAll(canvasWrapper, hudBox);
 
         logArea = new TextArea();
         logArea.setEditable(false);
         logArea.setPrefRowCount(6);
+        logArea.setStyle(
+                "-fx-control-inner-background: rgba(4,10,24,0.96);" +
+                        "-fx-text-fill: #e7f5ff;" +
+                        "-fx-highlight-fill: #2962ff;" +
+                        "-fx-highlight-text-fill: white;" +
+                        "-fx-border-color: #273754;"
+        );
 
         chatInput = new TextField();
+        chatInput.setStyle(
+                "-fx-background-radius: 10;" +
+                        "-fx-background-color: rgba(9,16,35,0.95);" +
+                        "-fx-text-fill: #e7f5ff;" +
+                        "-fx-prompt-text-fill: #9abfff;" +
+                        "-fx-border-color: #3b5a97;" +
+                        "-fx-border-radius: 10;"
+        );
+
         sendChatButton = new Button("Send");
+        sendChatButton.setStyle(
+                "-fx-background-radius: 14;" +
+                        "-fx-background-color: linear-gradient(to right, #29b6f6, #2962ff);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 12px;" +
+                        "-fx-padding: 4 12 4 12;"
+        );
+
         HBox chatBox = new HBox(5, chatInput, sendChatButton);
         chatBox.setAlignment(Pos.CENTER_LEFT);
 
-        VBox bottomBox = new VBox(5, new Label("Log / Chat:"), logArea, chatBox);
+        Label logLabel = new Label("Log / Chat:");
+        logLabel.setTextFill(Color.web("#e9f3ff"));
+        logLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+
+        VBox bottomBox = new VBox(5, logLabel, logArea, chatBox);
         bottomBox.setPadding(new Insets(10));
+        bottomBox.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(5, 10, 24, 0.94),
+                        new CornerRadii(14),
+                        Insets.EMPTY
+                )
+        ));
 
         sendChatButton.setOnAction(e -> sendChat());
         chatInput.setOnAction(e -> sendChat());
@@ -454,7 +664,12 @@ public class SymbiosisApp extends Application {
                 gamePane.setVisible(true);
             }
 
-            connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName + " (" + role + ")");
+            String roleIcon = switch (role) {
+                case FISH -> "🐟 ";
+                case CRAB -> "🦀 ";
+                default -> "";
+            };
+            connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName + " (" + roleIcon + role + ")");
         } else if (msg instanceof LevelDataMessage levelMsg) {
             applyLevelData(levelMsg);
         } else if (msg instanceof StateUpdateMessage stateMsg) {
@@ -481,7 +696,12 @@ public class SymbiosisApp extends Application {
     }
 
     private void updateRoleLabel(PlayerRole role) {
-        roleLabel.setText("Role: " + role);
+        String icon = switch (role) {
+            case FISH -> "🐟 ";
+            case CRAB -> "🦀 ";
+            default -> "";
+        };
+        roleLabel.setText("Role: " + icon + role);
         if (role == PlayerRole.FISH) {
             roleLabel.setTextFill(Color.CORNFLOWERBLUE);
         } else if (role == PlayerRole.CRAB) {
