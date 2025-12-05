@@ -69,7 +69,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void close() {
-        server.getGameLogic().handleDisconnect(this);
+        server.getGameLogic();
 
         server.removeClient(this);
         try {

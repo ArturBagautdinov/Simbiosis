@@ -30,6 +30,7 @@ public class ServerGameLogic {
                 "############"
         };
 
+        // LEVEL 1 – немного сложнее
         String[] level1 = new String[]{
                 "############",
                 "#..M....B..#",
@@ -41,7 +42,55 @@ public class ServerGameLogic {
                 "############"
         };
 
-        this.levels = new String[][]{ level0, level1 };
+        String[] level2 = new String[]{
+                "############",
+                "#..D....M..#",
+                "#..####....#",
+                "#..B....L..#",
+                "#..#..B....#",
+                "#..#....M..#",
+                "#...E......#",
+                "############"
+        };
+
+        String[] level3 = new String[]{
+                "############",
+                "#..M....B..#",
+                "###.####...#",
+                "#..D....L..#",
+                "#..B..M....#",
+                "#..####....#",
+                "#E.......B.#",
+                "############"
+        };
+
+        String[] level4 = new String[]{
+                "############",
+                "#M...B..D..#",
+                "#.####.###.#",
+                "#...L..M...#",
+                "#.B..###...#",
+                "#...B...M..#",
+                "#..E.......#",
+                "############"
+        };
+
+        String[] level5 = new String[]{
+                "############",
+                "#..M....B..#",
+                "#.####.###.#",
+                "#..D....L..#",
+                "#..B..M....#",
+                "#.####.###.#",
+                "#....B.....#",
+                "#..M....B..#",
+                "#...E......#",
+                "############"
+        };
+
+        this.levels = new String[][]{
+                level0, level1, level2, level3, level4, level5
+        };
 
         this.gameState = loadLevel(0);
     }
@@ -91,29 +140,47 @@ public class ServerGameLogic {
 
     private void placePlayersForCurrentLevel() {
         if (gameState.getFish() != null) {
-            if (currentLevelIndex == 0) {
-                gameState.getFish().setPosition(new Position(1, 1));
-            } else {
-                gameState.getFish().setPosition(new Position(1, 1));
-            }
-        }
-        if (gameState.getCrab() != null) {
-            if (currentLevelIndex == 0) {
-                gameState.getCrab().setPosition(new Position(2, 5));
-            } else {
-                gameState.getCrab().setPosition(new Position(10, 5));
-            }
-        }
-    }
+            Position fishPos;
 
-    public synchronized void handleDisconnect(ClientHandler handler) {
-        if (handler == fishClient) {
-            fishClient = null;
-            gameState.setFish(null);
+            if (currentLevelIndex == 0) {
+                fishPos = new Position(1, 1);
+            } else if (currentLevelIndex == 1) {
+                fishPos = new Position(1, 1);
+            } else if (currentLevelIndex == 2) {
+                fishPos = new Position(1, 1);
+            } else if (currentLevelIndex == 3) {
+                fishPos = new Position(1, 1);
+            } else if (currentLevelIndex == 4) {
+                fishPos = new Position(1, 1);
+            } else if (currentLevelIndex == 5) {
+                fishPos = new Position(1, 1);
+            } else {
+                fishPos = new Position(1, 1);
+            }
+
+            gameState.getFish().setPosition(fishPos);
         }
-        if (handler == crabClient) {
-            crabClient = null;
-            gameState.setCrab(null);
+
+        if (gameState.getCrab() != null) {
+            Position crabPos;
+
+            if (currentLevelIndex == 0) {
+                crabPos = new Position(2, 5);
+            } else if (currentLevelIndex == 1) {
+                crabPos = new Position(10, 5);
+            } else if (currentLevelIndex == 2) {
+                crabPos = new Position(2, 6);
+            } else if (currentLevelIndex == 3) {
+                crabPos = new Position(9, 6);
+            } else if (currentLevelIndex == 4) {
+                crabPos = new Position(2, 6);
+            } else if (currentLevelIndex == 5) {
+                crabPos = new Position(9, 7);
+            } else {
+                crabPos = new Position(2, 5);
+            }
+
+            gameState.getCrab().setPosition(crabPos);
         }
     }
 
@@ -125,10 +192,6 @@ public class ServerGameLogic {
             if (prefLevel >= 0 && prefLevel < levels.length) {
                 currentLevelIndex = prefLevel;
                 this.gameState = loadLevel(currentLevelIndex);
-                System.out.println("Starting level set from JOIN: " + currentLevelIndex);
-            } else {
-                System.out.println("JOIN preferredLevel invalid (" + prefLevel +
-                        "), using currentLevelIndex=" + currentLevelIndex);
             }
         }
 

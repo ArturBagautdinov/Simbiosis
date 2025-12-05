@@ -7,12 +7,14 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.scene.control.ListCell;
@@ -59,6 +61,81 @@ public class SymbiosisApp extends Application {
 
     private String preferredRoleString = null;
     private int preferredLevelIndex = -1;
+
+    private static final String[][] LEVEL_PREVIEWS = new String[][]{
+            {
+                    "############",
+                    "#..........#",
+                    "#..D....L..#",
+                    "#..####....#",
+                    "#..#..M....#",
+                    "#..#..B....#",
+                    "#......E...#",
+                    "############"
+            },
+            {
+                    "############",
+                    "#..M....B..#",
+                    "#..####....#",
+                    "#..D.......#",
+                    "#......L...#",
+                    "#..B....M..#",
+                    "#...E......#",
+                    "############"
+            },
+            {
+                    "############",
+                    "#..D....M..#",
+                    "#..####....#",
+                    "#..B....L..#",
+                    "#..#..B....#",
+                    "#..#....M..#",
+                    "#...E......#",
+                    "############"
+            },
+            {
+                    "############",
+                    "#..M....B..#",
+                    "###.####...#",
+                    "#..D....L..#",
+                    "#..B..M....#",
+                    "#..####....#",
+                    "#E.......B.#",
+                    "############"
+            },
+            {
+                    "############",
+                    "#M...B..D..#",
+                    "#.####.###.#",
+                    "#...L..M...#",
+                    "#.B..###...#",
+                    "#...B...M..#",
+                    "#..E.......#",
+                    "############"
+            },
+            {
+                    "############",
+                    "#..M....B..#",
+                    "#.####.###.#",
+                    "#..D....L..#",
+                    "#..B..M....#",
+                    "#.####.###.#",
+                    "#....B.....#",
+                    "#..M....B..#",
+                    "#...E......#",
+                    "############"
+            }
+    };
+
+    private static final String[] LEVEL_DIFFICULTY = new String[]{
+            "★☆☆☆☆",
+            "★★☆☆☆",
+            "★★★☆☆",
+            "★★★★☆",
+            "★★★★★",
+            "★★★★★"
+    };
+
 
     @Override
     public void start(Stage primaryStage) {
@@ -130,7 +207,7 @@ public class SymbiosisApp extends Application {
         VBox menuCard = new VBox(15);
         menuCard.setAlignment(Pos.CENTER);
         menuCard.setPadding(new Insets(20));
-        menuCard.setMaxWidth(380);
+        menuCard.setMaxWidth(420);
 
         menuCard.setBackground(new Background(
                 new BackgroundFill(
@@ -207,7 +284,15 @@ public class SymbiosisApp extends Application {
         roleBox.setMaxWidth(230);
 
         ComboBox<String> levelBox = new ComboBox<>();
-        levelBox.getItems().addAll("Level 1", "Level 2");
+        levelBox.getItems().addAll(
+                "Level 1",
+                "Level 2",
+                "Level 3",
+                "Level 4",
+                "Level 5",
+                "Level 6"
+        );
+
         levelBox.setValue("Level 1");
         levelBox.setMaxWidth(230);
 
@@ -222,32 +307,6 @@ public class SymbiosisApp extends Application {
         roleBox.setStyle(cbStyle);
         levelBox.setStyle(cbStyle);
 
-
-        skinBox.setCellFactory(cb -> new ListCell<>() {
-            @Override
-            protected void updateItem(SkinTheme item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.name());
-                }
-                setTextFill(Color.web("#10233d"));
-            }
-        });
-        skinBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(SkinTheme item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.name());
-                }
-                setTextFill(Color.web("#e7f5ff"));
-            }
-        });
-
         roleBox.setCellFactory(cb -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -256,58 +315,20 @@ public class SymbiosisApp extends Application {
                     setText(null);
                 } else {
                     switch (item) {
-                        case "Fish" -> setText("🐟 Fish");
-                        case "Crab" -> setText("🦀 Crab");
-                        default -> setText("🎲 Auto");
+                        case "Fish":
+                            setText("🐟 Fish");
+                            break;
+                        case "Crab":
+                            setText("🦀 Crab");
+                            break;
+                        default:
+                            setText("🎲 Auto");
+                            break;
                     }
                 }
-                setTextFill(Color.web("#10233d"));
             }
         });
-
-        roleBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    switch (item) {
-                        case "Fish" -> setText("🐟 Fish");
-                        case "Crab" -> setText("🦀 Crab");
-                        default -> setText("🎲 Auto");
-                    }
-                }
-                setTextFill(Color.web("#e7f5ff"));
-            }
-        });
-
-        levelBox.setCellFactory(cb -> new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item);
-                }
-                setTextFill(Color.web("#10233d"));
-            }
-        });
-
-        levelBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item);
-                }
-                setTextFill(Color.web("#e7f5ff"));
-            }
-        });
-
+        roleBox.setButtonCell(roleBox.getCellFactory().call(null));
 
         Label skinLabel = new Label("Skin theme");
         Label roleLabel = new Label("Role");
@@ -321,6 +342,38 @@ public class SymbiosisApp extends Application {
         Label roleHint = new Label("🐟 light & vision   |   🦀 strength & crates");
         roleHint.setTextFill(Color.web("#9fd6ff"));
         roleHint.setStyle("-fx-font-size: 11px; -fx-opacity: 0.9;");
+
+        Label previewLabel = new Label("Level preview");
+        previewLabel.setTextFill(Color.web("#e9f3ff"));
+        previewLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+
+        Label difficultyLabel = new Label("Difficulty: " + LEVEL_DIFFICULTY[0]);
+        difficultyLabel.setTextFill(Color.web("#ffd49e"));
+        difficultyLabel.setStyle("-fx-font-size: 12px;");
+
+        GridPane levelPreview = createLevelPreviewPane();
+        renderLevelPreview(levelPreview, 0);
+
+        VBox previewLegend = new VBox(3,
+                createLegendItem(Color.rgb(10, 20, 40), "Wall (#)"),
+                createLegendItem(Color.rgb(25, 40, 70), "Empty (.)"),
+                createLegendItem(Color.CYAN, "Exit (E)"),
+                createLegendItem(Color.LIMEGREEN, "Mushroom (M)"),
+                createLegendItem(Color.SANDYBROWN, "Box (B)"),
+                createLegendItem(Color.rgb(5, 5, 20), "Dark (D)"),
+                createLegendItem(Color.rgb(180, 220, 255), "Light (L)")
+        );
+        previewLegend.setAlignment(Pos.TOP_LEFT);
+        previewLegend.setPadding(new Insets(4, 0, 4, 0));
+
+        levelBox.getSelectionModel().selectedIndexProperty().addListener((obs, oldV, newV) -> {
+            int idx = (newV == null) ? 0 : newV.intValue();
+            if (idx < 0 || idx >= LEVEL_PREVIEWS.length) {
+                idx = 0;
+            }
+            renderLevelPreview(levelPreview, idx);
+            difficultyLabel.setText("Difficulty: " + LEVEL_DIFFICULTY[idx]);
+        });
 
         Button startButton = new Button("Start game");
         startButton.setPrefWidth(230);
@@ -381,17 +434,17 @@ public class SymbiosisApp extends Application {
             } else if ("Crab".equalsIgnoreCase(roleChoice)) {
                 preferredRoleString = "CRAB";
             } else {
-                preferredRoleString = null; // Auto
+                preferredRoleString = null;
             }
 
-            int levelIdx = levelBox.getSelectionModel().getSelectedIndex(); // 0 или 1
+            int levelIdx = levelBox.getSelectionModel().getSelectedIndex();
             preferredLevelIndex = levelIdx;
 
             statusLabel.setText("Connecting...");
             connectToServer(host, port, playerName, preferredRoleString, preferredLevelIndex, statusLabel);
         });
 
-        VBox fields = new VBox(6,
+        VBox fieldsLeft = new VBox(6,
                 new Label("Host"), hostField,
                 new Label("Port"), portField,
                 new Label("Name"), nameField,
@@ -400,23 +453,27 @@ public class SymbiosisApp extends Application {
                 roleHint,
                 levelLabel, levelBox
         );
-
-        for (int i = 0; i < fields.getChildren().size(); i++) {
-            if (fields.getChildren().get(i) instanceof Label l &&
-                    l != skinLabel && l != roleLabel && l != levelLabel) {
-
+        for (Node n : fieldsLeft.getChildren()) {
+            if (n instanceof Label l &&
+                    l != skinLabel && l != roleLabel && l != levelLabel && l != roleHint) {
                 l.setTextFill(Color.web("#d4e6ff"));
                 l.setStyle("-fx-font-size: 12px; -fx-opacity: 1.0;");
             }
         }
-        fields.setAlignment(Pos.CENTER_LEFT);
+        fieldsLeft.setAlignment(Pos.CENTER_LEFT);
+
+        VBox rightPreviewBox = new VBox(4, previewLabel, difficultyLabel, previewLegend, levelPreview);
+        rightPreviewBox.setAlignment(Pos.TOP_CENTER);
+
+        HBox middleRow = new HBox(15, fieldsLeft, rightPreviewBox);
+        middleRow.setAlignment(Pos.CENTER);
 
         VBox titleBox = new VBox(2, title, subtitle);
         titleBox.setAlignment(Pos.CENTER);
 
         menuCard.getChildren().addAll(
                 titleBox,
-                fields,
+                middleRow,
                 startButton,
                 statusLabel
         );
@@ -427,6 +484,86 @@ public class SymbiosisApp extends Application {
         return rootPane;
     }
 
+    private GridPane createLevelPreviewPane() {
+        GridPane grid = new GridPane();
+        grid.setHgap(1);
+        grid.setVgap(1);
+        grid.setPadding(new Insets(4));
+        grid.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(3, 8, 20, 0.9),
+                        new CornerRadii(10),
+                        Insets.EMPTY
+                )
+        ));
+        grid.setBorder(new Border(new BorderStroke(
+                Color.rgb(70, 120, 200, 0.8),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(10),
+                new BorderWidths(1.5)
+        )));
+        return grid;
+    }
+
+    private void renderLevelPreview(GridPane grid, int levelIndex) {
+        grid.getChildren().clear();
+        if (levelIndex < 0 || levelIndex >= LEVEL_PREVIEWS.length) return;
+
+        String[] rows = LEVEL_PREVIEWS[levelIndex];
+        for (int y = 0; y < rows.length; y++) {
+            String row = rows[y];
+            for (int x = 0; x < row.length(); x++) {
+                char c = row.charAt(x);
+                Rectangle r = new Rectangle(10, 10);
+                Color fill;
+                switch (c) {
+                    case '#':
+                        fill = Color.rgb(10, 20, 40);
+                        break;
+                    case 'E':
+                        fill = Color.CYAN;
+                        break;
+                    case 'M':
+                        fill = Color.LIMEGREEN;
+                        break;
+                    case 'B':
+                        fill = Color.SANDYBROWN;
+                        break;
+                    case 'D':
+                        fill = Color.rgb(5, 5, 20);
+                        break;
+                    case 'L':
+                        fill = Color.rgb(180, 220, 255);
+                        break;
+                    default:
+                        fill = Color.rgb(25, 40, 70);
+                        break;
+                }
+                r.setFill(fill);
+                r.setStroke(Color.rgb(5, 10, 20));
+                r.setStrokeWidth(0.5);
+                GridPane.setRowIndex(r, y);
+                GridPane.setColumnIndex(r, x);
+                grid.getChildren().add(r);
+            }
+        }
+    }
+
+    private HBox createLegendItem(Color color, String text) {
+        Rectangle rect = new Rectangle(12, 12, color);
+        rect.setArcWidth(3);
+        rect.setArcHeight(3);
+        rect.setStroke(Color.rgb(5, 10, 20));
+        rect.setStrokeWidth(0.5);
+
+        Label label = new Label(text);
+        label.setTextFill(Color.web("#e7f5ff"));
+        label.setStyle("-fx-font-size: 11px;");
+
+        HBox box = new HBox(6, rect, label);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
 
     private BorderPane createGamePane() {
         roleLabel = new Label("Role: —");
@@ -650,7 +787,8 @@ public class SymbiosisApp extends Application {
     }
 
     private void handleServerMessage(Message msg) {
-        if (msg instanceof RoleAssignedMessage roleMsg) {
+        if (msg instanceof RoleAssignedMessage) {
+            RoleAssignedMessage roleMsg = (RoleAssignedMessage) msg;
             viewState.setClientId(roleMsg.getPlayerId());
             PlayerRole role = PlayerRole.valueOf(roleMsg.getRole());
             viewState.setLocalRole(role);
@@ -664,15 +802,24 @@ public class SymbiosisApp extends Application {
                 gamePane.setVisible(true);
             }
 
-            String roleIcon = switch (role) {
-                case FISH -> "🐟 ";
-                case CRAB -> "🦀 ";
-                default -> "";
-            };
+            String roleIcon;
+            switch (role) {
+                case FISH:
+                    roleIcon = "🐟 ";
+                    break;
+                case CRAB:
+                    roleIcon = "🦀 ";
+                    break;
+                default:
+                    roleIcon = "";
+                    break;
+            }
             connectionLabel.setText("Connected to " + host + ":" + port + " as " + playerName + " (" + roleIcon + role + ")");
-        } else if (msg instanceof LevelDataMessage levelMsg) {
+        } else if (msg instanceof LevelDataMessage) {
+            LevelDataMessage levelMsg = (LevelDataMessage) msg;
             applyLevelData(levelMsg);
-        } else if (msg instanceof StateUpdateMessage stateMsg) {
+        } else if (msg instanceof StateUpdateMessage) {
+            StateUpdateMessage stateMsg = (StateUpdateMessage) msg;
             boolean wasCompleted = viewState.isLevelCompleted();
             parseAndApplyState(stateMsg.getPayload());
 
@@ -686,9 +833,11 @@ public class SymbiosisApp extends Application {
             } else if (!viewState.isLevelCompleted()) {
                 levelCompletedShown = false;
             }
-        } else if (msg instanceof ChatMessage chatMsg) {
+        } else if (msg instanceof ChatMessage) {
+            ChatMessage chatMsg = (ChatMessage) msg;
             appendLog(chatMsg.getFrom() + ": " + chatMsg.getText());
-        } else if (msg instanceof ErrorMessage err) {
+        } else if (msg instanceof ErrorMessage) {
+            ErrorMessage err = (ErrorMessage) msg;
             appendLog("ERROR " + err.getErrorCode() + ": " + err.getErrorText());
         } else {
             appendLog("Received: " + msg.getClass().getSimpleName());
@@ -696,11 +845,18 @@ public class SymbiosisApp extends Application {
     }
 
     private void updateRoleLabel(PlayerRole role) {
-        String icon = switch (role) {
-            case FISH -> "🐟 ";
-            case CRAB -> "🦀 ";
-            default -> "";
-        };
+        String icon;
+        switch (role) {
+            case FISH:
+                icon = "🐟 ";
+                break;
+            case CRAB:
+                icon = "🦀 ";
+                break;
+            default:
+                icon = "";
+                break;
+        }
         roleLabel.setText("Role: " + icon + role);
         if (role == PlayerRole.FISH) {
             roleLabel.setTextFill(Color.CORNFLOWERBLUE);
@@ -730,19 +886,24 @@ public class SymbiosisApp extends Application {
     }
 
     private TileType charToTile(char c) {
-        return switch (c) {
-            case '#' -> TileType.WALL;
-            case 'E' -> TileType.EXIT;
-            case 'D' -> TileType.DARK_TILE;
-            case 'L' -> TileType.LIGHT_TILE;
-            default -> TileType.EMPTY;
-        };
+        switch (c) {
+            case '#':
+                return TileType.WALL;
+            case 'E':
+                return TileType.EXIT;
+            case 'D':
+                return TileType.DARK_TILE;
+            case 'L':
+                return TileType.LIGHT_TILE;
+            default:
+                return TileType.EMPTY;
+        }
     }
 
     private void parseAndApplyState(String payload) {
         if (payload == null) return;
 
-        List<GameObject> objects = new java.util.ArrayList<>();
+        List<GameObject> objects = new java.util.ArrayList<GameObject>();
 
         String[] parts = payload.split(";");
         boolean levelCompleted = false;
@@ -790,12 +951,18 @@ public class SymbiosisApp extends Application {
                         int y = Integer.parseInt(fields[2]);
                         boolean active = "1".equals(fields[3]);
 
-                        ObjectType type = switch (typeChar) {
-                            case 'M' -> ObjectType.MUSHROOM;
-                            case 'B' -> ObjectType.BOX;
-                            case 'R' -> ObjectType.ROCK;
-                            default -> null;
-                        };
+                        ObjectType type = null;
+                        switch (typeChar) {
+                            case 'M':
+                                type = ObjectType.MUSHROOM;
+                                break;
+                            case 'B':
+                                type = ObjectType.BOX;
+                                break;
+                            case 'R':
+                                type = ObjectType.ROCK;
+                                break;
+                        }
                         if (type != null) {
                             GameObject obj = new GameObject(type, new Position(x, y));
                             obj.setActive(active);
