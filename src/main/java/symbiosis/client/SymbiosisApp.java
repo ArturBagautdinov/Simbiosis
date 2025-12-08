@@ -820,8 +820,6 @@ public class SymbiosisApp extends Application {
         } else if (msg instanceof ChatMessage chatMsg) {
             appendLog(chatMsg.getFrom() + ": " + chatMsg.getText());
         } else if (msg instanceof ErrorMessage err) {
-
-            // спец-обработка конфликтного голосования
             if ("VOTE_FAIL".equals(err.getErrorCode())) {
                 Alert voteAlert = new Alert(Alert.AlertType.WARNING);
                 voteAlert.setTitle("Vote mismatch");

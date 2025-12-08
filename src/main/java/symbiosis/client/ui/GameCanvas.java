@@ -4,6 +4,7 @@ import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.image.Image;
 import symbiosis.common.model.*;
 
 import java.util.HashMap;
@@ -30,6 +31,8 @@ public class GameCanvas extends Canvas {
     private final Map<Integer, Double> boxScreenY = new HashMap<>();
 
     private final AnimationTimer timer;
+
+    private final Textures textures = new Textures();
 
     public GameCanvas(double width, double height, ViewState viewState) {
         super(width, height);
@@ -112,37 +115,25 @@ public class GameCanvas extends Canvas {
         }
 
         SkinTheme theme = viewState.getSkinTheme();
-        Color wallColor;
         Color emptyColor;
-        Color darkTileColor;
-        Color lightTileColor;
-        Color fishColor;
-        Color crabColor;
+        Color gridColor;
+        Color glowColor;
 
         switch (theme) {
             case OCEAN -> {
-                wallColor = Color.DARKBLUE;
                 emptyColor = Color.rgb(5, 10, 30);
-                darkTileColor = Color.rgb(10, 20, 60);
-                lightTileColor = Color.rgb(40, 80, 120);
-                fishColor = Color.AQUA;
-                crabColor = Color.ORANGE;
+                gridColor = Color.color(1, 1, 1, 0.06);
+                glowColor = Color.LIMEGREEN;
             }
             case DEEP -> {
-                wallColor = Color.rgb(10, 10, 20);
                 emptyColor = Color.rgb(2, 2, 10);
-                darkTileColor = Color.rgb(8, 8, 30);
-                lightTileColor = Color.rgb(30, 30, 80);
-                fishColor = Color.TURQUOISE;
-                crabColor = Color.MAGENTA;
+                gridColor = Color.color(0.8, 0.8, 1, 0.05);
+                glowColor = Color.TURQUOISE;
             }
             default -> {
-                wallColor = Color.DARKSLATEGRAY;
                 emptyColor = Color.rgb(15, 15, 25);
-                darkTileColor = Color.rgb(30, 30, 50);
-                lightTileColor = Color.rgb(70, 70, 100);
-                fishColor = Color.CORNFLOWERBLUE;
-                crabColor = Color.CRIMSON;
+                gridColor = Color.color(1, 1, 1, 0.08);
+                glowColor = Color.LIMEGREEN;
             }
         }
 
@@ -166,40 +157,25 @@ public class GameCanvas extends Canvas {
                 double py = y * tileSize;
 
                 switch (tile) {
-                    case WALL -> {
-                        gc.setFill(wallColor);
-                        gc.fillRect(px, py, tileSize, tileSize);
-                    }
+                    case WALL -> drawTile(gc, textures.wall, px, py);
                     case EXIT -> {
-                        gc.setFill(Color.DARKGREEN);
-                        gc.fillRect(px, py, tileSize, tileSize);
+                        // Подложка пола + сам портал + старый glow-эффект
+                        drawTile(gc, textures.floorLight, px, py);
+                        drawTile(gc, textures.exit, px, py);
 
                         double pulse = 0.5 + 0.5 * Math.sin(animTime * 3.0);
                         gc.setGlobalAlpha(0.3 + 0.3 * pulse);
-                        gc.setFill(Color.LIMEGREEN);
+                        gc.setFill(glowColor);
                         gc.fillOval(px - tileSize * 0.1, py - tileSize * 0.1,
                                 tileSize * 1.2, tileSize * 1.2);
                         gc.setGlobalAlpha(1.0);
-
-                        gc.setFill(Color.LIMEGREEN);
-                        gc.fillOval(px + tileSize * 0.25, py + tileSize * 0.25,
-                                tileSize * 0.5, tileSize * 0.5);
                     }
-                    case LIGHT_TILE -> {
-                        gc.setFill(lightTileColor);
-                        gc.fillRect(px, py, tileSize, tileSize);
-                    }
-                    case DARK_TILE -> {
-                        gc.setFill(darkTileColor);
-                        gc.fillRect(px, py, tileSize, tileSize);
-                    }
-                    case EMPTY -> {
-                        gc.setFill(emptyColor);
-                        gc.fillRect(px, py, tileSize, tileSize);
-                    }
+                    case LIGHT_TILE -> drawTile(gc, textures.floorLight, px, py);
+                    case DARK_TILE -> drawTile(gc, textures.floorDark, px, py);
+                    case EMPTY -> drawTile(gc, textures.floor, px, py);
                 }
 
-                gc.setStroke(Color.color(1, 1, 1, 0.08));
+                gc.setStroke(gridColor);
                 gc.strokeRect(px, py, tileSize, tileSize);
             }
         }
@@ -238,12 +214,13 @@ public class GameCanvas extends Canvas {
                         boxScreenX.put(i, sx);
                         boxScreenY.put(i, sy);
 
-                        double size = tileSize * 0.8;
-                        double drawX = sx - size / 2.0;
-                        double drawY = sy - size / 2.0;
-
-                        gc.setFill(Color.SADDLEBROWN);
-                        gc.fillRect(drawX, drawY, size, size);
+                        gc.drawImage(
+                                textures.box,
+                                sx - tileSize / 2.0,
+                                sy - tileSize / 2.0,
+                                tileSize,
+                                tileSize
+                        );
                     }
                     case ROCK -> {
                         gc.setFill(Color.GRAY);
@@ -261,13 +238,9 @@ public class GameCanvas extends Canvas {
                             gc.fillOval(px - tileSize * 0.2, py - tileSize * 0.2,
                                     tileSize * 1.4, tileSize * 1.4);
                             gc.setGlobalAlpha(1.0);
-
-                            gc.setFill(Color.GOLD);
-                        } else {
-                            gc.setFill(Color.DARKORANGE);
                         }
-                        gc.fillOval(px + tileSize * 0.25, py + tileSize * 0.25,
-                                tileSize * 0.5, tileSize * 0.5);
+
+                        gc.drawImage(textures.mushroom, px, py, tileSize, tileSize);
                     }
                 }
             }
@@ -277,22 +250,33 @@ public class GameCanvas extends Canvas {
         if (fish != null && fishScreenX != null && fishScreenY != null) {
             boolean lit = !isCrab || isTileLitForCrab(fish.getX(), fish.getY(), fishPos, objects);
             if (!isCrab || lit) {
-                double r = tileSize * 0.4;
-
-                gc.setFill(fishColor);
-                gc.fillOval(fishScreenX - r, fishScreenY - r, r * 2, r * 2);
+                gc.drawImage(
+                        textures.fish,
+                        fishScreenX - tileSize / 2.0,
+                        fishScreenY - tileSize / 2.0,
+                        tileSize,
+                        tileSize
+                );
             }
         }
+
         Position crab = viewState.getCrabPosition();
         if (crab != null && crabScreenX != null && crabScreenY != null) {
             boolean lit = !isCrab || isTileLitForCrab(crab.getX(), crab.getY(), fishPos, objects);
             if (!isCrab || lit) {
-                double s = tileSize * 0.8;
-
-                gc.setFill(crabColor);
-                gc.fillRect(crabScreenX - s / 2.0, crabScreenY - s / 2.0, s, s);
+                gc.drawImage(
+                        textures.crab,
+                        crabScreenX - tileSize / 2.0,
+                        crabScreenY - tileSize / 2.0,
+                        tileSize,
+                        tileSize
+                );
             }
         }
+    }
+
+    private void drawTile(GraphicsContext gc, Image image, double px, double py) {
+        gc.drawImage(image, px, py, tileSize, tileSize);
     }
 
     private boolean isTileLitForCrab(int tileX, int tileY,
