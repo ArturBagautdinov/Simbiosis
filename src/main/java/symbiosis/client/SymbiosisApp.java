@@ -29,6 +29,7 @@ import symbiosis.common.model.*;
 import symbiosis.common.net.*;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 public class SymbiosisApp extends Application {
@@ -62,12 +63,12 @@ public class SymbiosisApp extends Application {
     private String preferredRoleString = null;
     private int preferredLevelIndex = -1;
 
-    // для тем
     private VBox menuCardRef;
     private HBox topBarRef;
     private VBox hudBoxRef;
     private StackPane canvasWrapperRef;
     private VBox bottomBoxRef;
+    private Label menuStatusLabel;
 
     private static final String[][] LEVEL_PREVIEWS = new String[][]{
             {
@@ -148,7 +149,7 @@ public class SymbiosisApp extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Symbiosis");
 
-        // сначала тема по умолчанию
+        // тема по умолчанию
         viewState.setSkinTheme(SkinTheme.CLASSIC);
 
         gamePane = createGamePane();
@@ -169,8 +170,34 @@ public class SymbiosisApp extends Application {
             if (viewState.getClientId() == null) return;
 
             if (event.getCode() == KeyCode.ESCAPE) {
-                paused = !paused;
-                pauseLabel.setText(paused ? "PAUSED" : "");
+                if (!paused) {
+                    paused = true;
+                    pauseLabel.setText("PAUSED");
+
+                    Dialog<ButtonType> dialog = new Dialog<>();
+                    dialog.setTitle("Pause");
+                    dialog.setHeaderText("Game paused");
+
+                    ButtonType resumeBtn = new ButtonType("Continue", ButtonBar.ButtonData.OK_DONE);
+                    ButtonType menuBtn = new ButtonType("Main Menu", ButtonBar.ButtonData.LEFT);
+                    ButtonType cancelBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                    dialog.getDialogPane().getButtonTypes().addAll(resumeBtn, menuBtn, cancelBtn);
+
+                    dialog.showAndWait().ifPresent(type -> {
+                        if (type == menuBtn) {
+                            returnToMainMenu();
+                        } else if (type == resumeBtn) {
+                            paused = false;
+                            pauseLabel.setText("");
+                        }
+                    });
+
+                } else {
+                    paused = false;
+                    pauseLabel.setText("");
+                }
+
                 event.consume();
                 return;
             }
@@ -300,7 +327,6 @@ public class SymbiosisApp extends Application {
                 "Level 5",
                 "Level 6"
         );
-
         levelBox.setValue("Level 1");
         levelBox.setMaxWidth(230);
 
@@ -409,11 +435,10 @@ public class SymbiosisApp extends Application {
                 )
         );
 
-        Label statusLabel = new Label();
-        statusLabel.setTextFill(Color.web("#ffd49e"));
-        statusLabel.setStyle("-fx-font-size: 13px; -fx-effect: dropshadow(gaussian, rgba(255,212,158,0.6), 8,0.3,0,0);");
+        menuStatusLabel = new Label();
+        menuStatusLabel.setTextFill(Color.web("#ffd49e"));
+        menuStatusLabel.setStyle("-fx-font-size: 13px; -fx-effect: dropshadow(gaussian, rgba(255,212,158,0.6), 8,0.3,0,0);");
 
-        // смена темы прямо в меню
         skinBox.valueProperty().addListener((obs, oldV, newV) -> {
             if (newV != null) {
                 viewState.setSkinTheme(newV);
@@ -427,12 +452,12 @@ public class SymbiosisApp extends Application {
             try {
                 port = Integer.parseInt(portField.getText().trim());
             } catch (NumberFormatException ex) {
-                statusLabel.setText("Invalid port");
+                menuStatusLabel.setText("Invalid port");
                 return;
             }
             playerName = nameField.getText().trim();
             if (playerName.isEmpty()) {
-                statusLabel.setText("Enter name");
+                menuStatusLabel.setText("Enter name");
                 return;
             }
 
@@ -451,8 +476,8 @@ public class SymbiosisApp extends Application {
             int levelIdx = levelBox.getSelectionModel().getSelectedIndex();
             preferredLevelIndex = levelIdx;
 
-            statusLabel.setText("Connecting...");
-            connectToServer(host, port, playerName, preferredRoleString, preferredLevelIndex, statusLabel);
+            menuStatusLabel.setText("Connecting...");
+            connectToServer(host, port, playerName, preferredRoleString, preferredLevelIndex, menuStatusLabel);
         });
 
         VBox fieldsLeft = new VBox(6,
@@ -486,7 +511,7 @@ public class SymbiosisApp extends Application {
                 titleBox,
                 middleRow,
                 startButton,
-                statusLabel
+                menuStatusLabel
         );
 
         rootPane.getChildren().add(menuCardRef);
@@ -645,6 +670,17 @@ public class SymbiosisApp extends Application {
             l.setStyle("-fx-font-size: 12px;");
         }
 
+        Button exitToMenuButton = new Button("Main Menu");
+        exitToMenuButton.setStyle(
+                "-fx-background-radius: 14;" +
+                        "-fx-background-color: linear-gradient(to right, #ff7043, #f4511e);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 12px;" +
+                        "-fx-padding: 4 12 4 12;"
+        );
+        exitToMenuButton.setOnAction(e -> returnToMainMenu());
+
         hudBoxRef = new VBox(6,
                 compassTitle,
                 compassWrapper,
@@ -658,7 +694,9 @@ public class SymbiosisApp extends Application {
                 hudGoal,
                 new Separator(),
                 hudFish,
-                hudCrab
+                hudCrab,
+                new Separator(),
+                exitToMenuButton
         );
         hudBoxRef.setAlignment(Pos.TOP_LEFT);
         hudBoxRef.setPadding(new Insets(10));
@@ -843,6 +881,13 @@ public class SymbiosisApp extends Application {
                 voteAlert.setHeaderText("Голосование не удалось");
                 voteAlert.setContentText("Оба игрока должны выбрать один и тот же вариант (Auto или один и тот же уровень).");
                 voteAlert.show();
+            } else if ("PLAYER_LEFT".equals(err.getErrorCode())) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Player disconnected");
+                alert.setHeaderText("Другой игрок отключился");
+                alert.setContentText("Игра остановлена. Вы будете возвращены в главное меню.");
+                alert.showAndWait();
+                returnToMainMenu();
             }
 
             appendLog("ERROR " + err.getErrorCode() + ": " + err.getErrorText());
@@ -1076,7 +1121,6 @@ public class SymbiosisApp extends Application {
         SkinTheme theme = viewState.getSkinTheme();
         SkinTheme.ThemePalette p = theme.palette();
 
-        // фон окна
         if (root != null) {
             if (theme == SkinTheme.CLASSIC) {
                 root.setStyle(
@@ -1086,7 +1130,7 @@ public class SymbiosisApp extends Application {
                 root.setStyle(
                         "-fx-background-color: linear-gradient(to bottom, #00101c, #004066, #00101c);"
                 );
-            } else { // DEEP
+            } else {
                 root.setStyle(
                         "-fx-background-color: linear-gradient(to bottom, #05020d, #160637, #05020d);"
                 );
@@ -1165,6 +1209,36 @@ public class SymbiosisApp extends Application {
             connectionLabel.setTextFill(p.textAccent());
         }
     }
+
+    private void returnToMainMenu() {
+        try {
+            if (client != null) {
+                client.disconnect();
+                client = null;
+            }
+        } catch (Exception ignored) {}
+
+        paused = false;
+        completedCount = 0;
+        levelCompletedShown = false;
+
+        viewState.setClientId(null);
+        viewState.setFishPosition(null);
+        viewState.setCrabPosition(null);
+        viewState.setObjects(Collections.emptyList());
+        viewState.setLevelCompleted(false);
+
+        if (gamePane != null) gamePane.setVisible(false);
+        if (menuPane != null) menuPane.setVisible(true);
+
+        if (connectionLabel != null) connectionLabel.setText("Not connected");
+        if (roleLabel != null) roleLabel.setText("Role: —");
+        if (pauseLabel != null) pauseLabel.setText("");
+        if (completedLabel != null) completedLabel.setText("Completed: 0");
+        if (logArea != null) logArea.clear();
+        if (menuStatusLabel != null) menuStatusLabel.setText("");
+    }
+
 
     @Override
     public void stop() {

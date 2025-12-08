@@ -533,30 +533,33 @@ public class ServerGameLogic {
     }
 
     public synchronized void handleDisconnect(ClientHandler handler) {
-        boolean roleChanged = false;
+        boolean isFish = (handler == fishClient);
+        boolean isCrab = (handler == crabClient);
 
-        if (fishClient == handler) {
-            fishClient = null;
-            if (gameState.getFish() != null) {
-                gameState.setFish(null);
-            }
-            fishVote = null;
-            roleChanged = true;
-            System.out.println("Fish disconnected");
+        if (!isFish && !isCrab) {
+            return;
         }
 
-        if (crabClient == handler) {
-            crabClient = null;
-            if (gameState.getCrab() != null) {
-                gameState.setCrab(null);
-            }
-            crabVote = null;
-            roleChanged = true;
-            System.out.println("Crab disconnected");
+        System.out.println((isFish ? "Fish" : "Crab") + " disconnected");
+
+        fishClient = null;
+        crabClient = null;
+
+        if (gameState.getFish() != null) {
+            gameState.setFish(null);
+        }
+        if (gameState.getCrab() != null) {
+            gameState.setCrab(null);
         }
 
-        if (roleChanged) {
-            broadcast(new ErrorMessage("PLAYER_LEFT", "Другой игрок отключился"));
-        }
+        clearVotes();
+
+        gameState = loadLevel(currentLevelIndex);
+
+        broadcast(new ErrorMessage(
+                "PLAYER_LEFT",
+                "Другой игрок отключился. Игра завершена, вернитесь в главное меню."
+        ));
     }
+
 }
