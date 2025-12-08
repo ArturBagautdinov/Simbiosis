@@ -62,6 +62,13 @@ public class SymbiosisApp extends Application {
     private String preferredRoleString = null;
     private int preferredLevelIndex = -1;
 
+    // для тем
+    private VBox menuCardRef;
+    private HBox topBarRef;
+    private VBox hudBoxRef;
+    private StackPane canvasWrapperRef;
+    private VBox bottomBoxRef;
+
     private static final String[][] LEVEL_PREVIEWS = new String[][]{
             {
                     "############",
@@ -141,6 +148,9 @@ public class SymbiosisApp extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Symbiosis");
 
+        // сначала тема по умолчанию
+        viewState.setSkinTheme(SkinTheme.CLASSIC);
+
         gamePane = createGamePane();
         menuPane = createMenuPane();
 
@@ -152,9 +162,7 @@ public class SymbiosisApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        root.setStyle(
-                "-fx-background-color: linear-gradient(to bottom, #020b1b, #041932, #030b20);"
-        );
+        applyThemeToUi();
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (client == null) return;
@@ -204,19 +212,19 @@ public class SymbiosisApp extends Application {
         StackPane rootPane = new StackPane();
         rootPane.setPadding(new Insets(20));
 
-        VBox menuCard = new VBox(15);
-        menuCard.setAlignment(Pos.CENTER);
-        menuCard.setPadding(new Insets(20));
-        menuCard.setMaxWidth(420);
+        menuCardRef = new VBox(15);
+        menuCardRef.setAlignment(Pos.CENTER);
+        menuCardRef.setPadding(new Insets(20));
+        menuCardRef.setMaxWidth(420);
 
-        menuCard.setBackground(new Background(
+        menuCardRef.setBackground(new Background(
                 new BackgroundFill(
                         Color.rgb(10, 20, 40, 0.92),
                         new CornerRadii(18),
                         Insets.EMPTY
                 )
         ));
-        menuCard.setBorder(new Border(new BorderStroke(
+        menuCardRef.setBorder(new Border(new BorderStroke(
                 Color.rgb(80, 150, 255, 0.6),
                 BorderStrokeStyle.SOLID,
                 new CornerRadii(18),
@@ -228,7 +236,7 @@ public class SymbiosisApp extends Application {
         shadow.setOffsetX(0);
         shadow.setOffsetY(8);
         shadow.setColor(Color.color(0.0, 0.4, 0.8, 0.65));
-        menuCard.setEffect(shadow);
+        menuCardRef.setEffect(shadow);
 
         Timeline glow = new Timeline(
                 new KeyFrame(
@@ -275,7 +283,7 @@ public class SymbiosisApp extends Application {
 
         ComboBox<SkinTheme> skinBox = new ComboBox<>();
         skinBox.getItems().addAll(SkinTheme.CLASSIC, SkinTheme.OCEAN, SkinTheme.DEEP);
-        skinBox.setValue(SkinTheme.CLASSIC);
+        skinBox.setValue(viewState.getSkinTheme());
         skinBox.setMaxWidth(230);
 
         ComboBox<String> roleBox = new ComboBox<>();
@@ -405,6 +413,14 @@ public class SymbiosisApp extends Application {
         statusLabel.setTextFill(Color.web("#ffd49e"));
         statusLabel.setStyle("-fx-font-size: 13px; -fx-effect: dropshadow(gaussian, rgba(255,212,158,0.6), 8,0.3,0,0);");
 
+        // смена темы прямо в меню
+        skinBox.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) {
+                viewState.setSkinTheme(newV);
+                applyThemeToUi();
+            }
+        });
+
         startButton.setOnAction(e -> {
             host = hostField.getText().trim();
             if (host.isEmpty()) host = "localhost";
@@ -421,6 +437,7 @@ public class SymbiosisApp extends Application {
             }
 
             viewState.setSkinTheme(skinBox.getValue());
+            applyThemeToUi();
 
             String roleChoice = roleBox.getValue();
             if ("Fish".equalsIgnoreCase(roleChoice)) {
@@ -465,15 +482,15 @@ public class SymbiosisApp extends Application {
         VBox titleBox = new VBox(2, title, subtitle);
         titleBox.setAlignment(Pos.CENTER);
 
-        menuCard.getChildren().addAll(
+        menuCardRef.getChildren().addAll(
                 titleBox,
                 middleRow,
                 startButton,
                 statusLabel
         );
 
-        rootPane.getChildren().add(menuCard);
-        StackPane.setAlignment(menuCard, Pos.CENTER);
+        rootPane.getChildren().add(menuCardRef);
+        StackPane.setAlignment(menuCardRef, Pos.CENTER);
 
         return rootPane;
     }
@@ -570,16 +587,16 @@ public class SymbiosisApp extends Application {
         completedLabel.setTextFill(Color.web("#a5ffb3"));
         connectionLabel.setTextFill(Color.web("#b0c7ff"));
 
-        HBox topBar = new HBox(15,
+        topBarRef = new HBox(15,
                 connectionLabel,
                 new Separator(),
                 roleLabel,
                 pauseLabel,
                 completedLabel
         );
-        topBar.setPadding(new Insets(10));
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setBackground(new Background(
+        topBarRef.setPadding(new Insets(10));
+        topBarRef.setAlignment(Pos.CENTER_LEFT);
+        topBarRef.setBackground(new Background(
                 new BackgroundFill(
                         Color.rgb(6, 10, 22, 0.92),
                         CornerRadii.EMPTY,
@@ -628,7 +645,7 @@ public class SymbiosisApp extends Application {
             l.setStyle("-fx-font-size: 12px;");
         }
 
-        VBox hudBox = new VBox(6,
+        hudBoxRef = new VBox(6,
                 compassTitle,
                 compassWrapper,
                 new Separator(),
@@ -643,17 +660,17 @@ public class SymbiosisApp extends Application {
                 hudFish,
                 hudCrab
         );
-        hudBox.setAlignment(Pos.TOP_LEFT);
-        hudBox.setPadding(new Insets(10));
-        hudBox.setFillWidth(true);
-        hudBox.setBackground(new Background(
+        hudBoxRef.setAlignment(Pos.TOP_LEFT);
+        hudBoxRef.setPadding(new Insets(10));
+        hudBoxRef.setFillWidth(true);
+        hudBoxRef.setBackground(new Background(
                 new BackgroundFill(
                         Color.rgb(8, 16, 35, 0.94),
                         new CornerRadii(14),
                         Insets.EMPTY
                 )
         ));
-        hudBox.setBorder(new Border(new BorderStroke(
+        hudBoxRef.setBorder(new Border(new BorderStroke(
                 Color.rgb(70, 120, 200, 0.7),
                 BorderStrokeStyle.SOLID,
                 new CornerRadii(14),
@@ -664,23 +681,23 @@ public class SymbiosisApp extends Application {
         centerRow.setPadding(new Insets(8));
         centerRow.setAlignment(Pos.CENTER_LEFT);
 
-        StackPane canvasWrapper = new StackPane(gameCanvas);
-        canvasWrapper.setPrefSize(800, 600);
-        canvasWrapper.setBackground(new Background(
+        canvasWrapperRef = new StackPane(gameCanvas);
+        canvasWrapperRef.setPrefSize(800, 600);
+        canvasWrapperRef.setBackground(new Background(
                 new BackgroundFill(
                         Color.rgb(3, 8, 20, 0.9),
                         new CornerRadii(16),
                         Insets.EMPTY
                 )
         ));
-        canvasWrapper.setBorder(new Border(new BorderStroke(
+        canvasWrapperRef.setBorder(new Border(new BorderStroke(
                 Color.rgb(40, 80, 150, 0.8),
                 BorderStrokeStyle.SOLID,
                 new CornerRadii(16),
                 new BorderWidths(1.5)
         )));
 
-        centerRow.getChildren().addAll(canvasWrapper, hudBox);
+        centerRow.getChildren().addAll(canvasWrapperRef, hudBoxRef);
 
         logArea = new TextArea();
         logArea.setEditable(false);
@@ -720,9 +737,9 @@ public class SymbiosisApp extends Application {
         logLabel.setTextFill(Color.web("#e9f3ff"));
         logLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
 
-        VBox bottomBox = new VBox(5, logLabel, logArea, chatBox);
-        bottomBox.setPadding(new Insets(10));
-        bottomBox.setBackground(new Background(
+        bottomBoxRef = new VBox(5, logLabel, logArea, chatBox);
+        bottomBoxRef.setPadding(new Insets(10));
+        bottomBoxRef.setBackground(new Background(
                 new BackgroundFill(
                         Color.rgb(5, 10, 24, 0.94),
                         new CornerRadii(14),
@@ -734,9 +751,9 @@ public class SymbiosisApp extends Application {
         chatInput.setOnAction(e -> sendChat());
 
         BorderPane gameRoot = new BorderPane();
-        gameRoot.setTop(topBar);
+        gameRoot.setTop(topBarRef);
         gameRoot.setCenter(centerRow);
-        gameRoot.setBottom(bottomBox);
+        gameRoot.setBottom(bottomBoxRef);
 
         return gameRoot;
     }
@@ -919,7 +936,7 @@ public class SymbiosisApp extends Application {
             } else if ("O".equalsIgnoreCase(key)) {
                 String[] entries = value.split("/");
                 for (String e : entries) {
-                    e = e.trim();
+                    e = trimSafe(e);
                     if (e.isEmpty()) continue;
                     String[] fields = e.split(",");
                     if (fields.length < 4) continue;
@@ -952,6 +969,10 @@ public class SymbiosisApp extends Application {
 
         viewState.setObjects(objects);
         viewState.setLevelCompleted(levelCompleted);
+    }
+
+    private String trimSafe(String s) {
+        return s == null ? "" : s.trim();
     }
 
     private void sendInput(InputMessage.InputType type) {
@@ -1048,6 +1069,101 @@ public class SymbiosisApp extends Application {
                 }
             }
         });
+    }
+
+    private void applyThemeToUi() {
+        if (viewState.getSkinTheme() == null) return;
+        SkinTheme theme = viewState.getSkinTheme();
+        SkinTheme.ThemePalette p = theme.palette();
+
+        // фон окна
+        if (root != null) {
+            if (theme == SkinTheme.CLASSIC) {
+                root.setStyle(
+                        "-fx-background-color: linear-gradient(to bottom, #020b1b, #041932, #030b20);"
+                );
+            } else if (theme == SkinTheme.OCEAN) {
+                root.setStyle(
+                        "-fx-background-color: linear-gradient(to bottom, #00101c, #004066, #00101c);"
+                );
+            } else { // DEEP
+                root.setStyle(
+                        "-fx-background-color: linear-gradient(to bottom, #05020d, #160637, #05020d);"
+                );
+            }
+        }
+
+        if (menuCardRef != null) {
+            menuCardRef.setBackground(new Background(
+                    new BackgroundFill(
+                            p.menuCardBackground(),
+                            new CornerRadii(18),
+                            Insets.EMPTY
+                    )
+            ));
+            menuCardRef.setBorder(new Border(new BorderStroke(
+                    p.menuCardBorder(),
+                    BorderStrokeStyle.SOLID,
+                    new CornerRadii(18),
+                    new BorderWidths(2)
+            )));
+        }
+
+        if (topBarRef != null) {
+            topBarRef.setBackground(new Background(
+                    new BackgroundFill(
+                            p.topBarBackground(),
+                            CornerRadii.EMPTY,
+                            Insets.EMPTY
+                    )
+            ));
+        }
+
+        if (hudBoxRef != null) {
+            hudBoxRef.setBackground(new Background(
+                    new BackgroundFill(
+                            p.hudBackground(),
+                            new CornerRadii(14),
+                            Insets.EMPTY
+                    )
+            ));
+            hudBoxRef.setBorder(new Border(new BorderStroke(
+                    p.hudBorder(),
+                    BorderStrokeStyle.SOLID,
+                    new CornerRadii(14),
+                    new BorderWidths(1.5)
+            )));
+        }
+
+        if (canvasWrapperRef != null) {
+            canvasWrapperRef.setBackground(new Background(
+                    new BackgroundFill(
+                            p.canvasBackground(),
+                            new CornerRadii(16),
+                            Insets.EMPTY
+                    )
+            ));
+            canvasWrapperRef.setBorder(new Border(new BorderStroke(
+                    p.canvasBorder(),
+                    BorderStrokeStyle.SOLID,
+                    new CornerRadii(16),
+                    new BorderWidths(1.5)
+            )));
+        }
+
+        if (bottomBoxRef != null) {
+            bottomBoxRef.setBackground(new Background(
+                    new BackgroundFill(
+                            p.bottomBackground(),
+                            new CornerRadii(14),
+                            Insets.EMPTY
+                    )
+            ));
+        }
+
+        if (connectionLabel != null) {
+            connectionLabel.setTextFill(p.textAccent());
+        }
     }
 
     @Override
