@@ -19,6 +19,10 @@ public class ServerGameLogic {
     private Integer fishVote = null;
     private Integer crabVote = null;
 
+    private boolean restartRequested = false;
+    private ClientHandler restartRequester = null;
+
+
     public ServerGameLogic(GameServer server) {
         this.server = server;
 
@@ -531,6 +535,72 @@ public class ServerGameLogic {
             }
         }
     }
+    private void restartCurrentLevelNoVote() {
+        this.gameState = loadLevel(currentLevelIndex);
+        recreatePlayersAfterLevelChange();
+        placePlayersForCurrentLevel();
+        clearVotes();
+
+        restartRequested = false;
+        restartRequester = null;
+
+        broadcastLevelDataToAll();
+        broadcastState();
+        System.out.println("Level restarted by mutual agreement, level " + currentLevelIndex);
+    }
+
+    public synchronized void handleRestartRequest(ClientHandler handler, RestartRequestMessage msg) {
+        if (fishClient == null && crabClient == null) {
+            return;
+        }
+
+        if (fishClient == null || crabClient == null) {
+            restartCurrentLevelNoVote();
+            return;
+        }
+
+        if (restartRequested) {
+            return;
+        }
+
+        restartRequested = true;
+        restartRequester = handler;
+
+        String fromName = "Partner";
+        if (handler == fishClient && gameState.getFish() != null) {
+            fromName = gameState.getFish().getName();
+        } else if (handler == crabClient && gameState.getCrab() != null) {
+            fromName = gameState.getCrab().getName();
+        }
+
+        ClientHandler other = (handler == fishClient) ? crabClient : fishClient;
+        if (other != null) {
+            other.send(new RestartOfferMessage(fromName));
+        }
+    }
+
+    public synchronized void handleRestartResponse(ClientHandler handler, RestartResponseMessage msg) {
+        if (!restartRequested || restartRequester == null) {
+            return;
+        }
+
+        boolean accepted = msg.isAccepted();
+
+        if (!accepted) {
+
+            if (restartRequester != null) {
+                restartRequester.send(new ErrorMessage(
+                        "RESTART_DECLINED",
+                        "Партнёр отклонил перезапуск уровня"
+                ));
+            }
+            restartRequested = false;
+            restartRequester = null;
+            return;
+        }
+
+        restartCurrentLevelNoVote();
+    }
 
     public synchronized void handleDisconnect(ClientHandler handler) {
         boolean isFish = (handler == fishClient);
@@ -560,6 +630,9 @@ public class ServerGameLogic {
                 "PLAYER_LEFT",
                 "Другой игрок отключился. Игра завершена, вернитесь в главное меню."
         ));
+
+        restartRequested = false;
+        restartRequester = null;
     }
 
 }

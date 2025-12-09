@@ -8,5 +8,8 @@ public enum MessageType {
     ROLE_ASSIGNED,
     ERROR,
     LEVEL_DATA,
-    LEVEL_VOTE
+    LEVEL_VOTE,
+    RESTART_REQUEST,
+    RESTART_OFFER,
+    RESTART_RESPONSE
 }

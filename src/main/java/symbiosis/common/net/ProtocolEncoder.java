@@ -54,6 +54,20 @@ public class ProtocolEncoder {
                         : Integer.toString(m.getLevelIndex());
                 return "LEVEL_VOTE|" + escape(m.getClientId()) + "|" + lvl;
             }
+            case RESTART_REQUEST -> {
+                RestartRequestMessage m = (RestartRequestMessage) msg;
+                return "RESTART_REQUEST|" + escape(m.getClientId());
+            }
+            case RESTART_OFFER -> {
+                RestartOfferMessage m = (RestartOfferMessage) msg;
+                return "RESTART_OFFER|" + escape(m.getFromName());
+            }
+            case RESTART_RESPONSE -> {
+                RestartResponseMessage m = (RestartResponseMessage) msg;
+                return "RESTART_RESPONSE|"
+                        + escape(m.getClientId()) + "|"
+                        + (m.isAccepted() ? "1" : "0");
+            }
             default -> throw new IllegalArgumentException("Unknown message type: " + msg.getType());
         }
     }

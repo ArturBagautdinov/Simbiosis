@@ -681,6 +681,17 @@ public class SymbiosisApp extends Application {
         );
         exitToMenuButton.setOnAction(e -> returnToMainMenu());
 
+        Button restartButton = new Button("Restart level");
+        restartButton.setStyle(
+                "-fx-background-radius: 14;" +
+                        "-fx-background-color: linear-gradient(to right, #ffa726, #fb8c00);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 12px;" +
+                        "-fx-padding: 4 12 4 12;"
+        );
+        restartButton.setOnAction(e -> onRestartClicked());
+
         hudBoxRef = new VBox(6,
                 compassTitle,
                 compassWrapper,
@@ -696,6 +707,7 @@ public class SymbiosisApp extends Application {
                 hudFish,
                 hudCrab,
                 new Separator(),
+                restartButton,
                 exitToMenuButton
         );
         hudBoxRef.setAlignment(Pos.TOP_LEFT);
@@ -891,6 +903,28 @@ public class SymbiosisApp extends Application {
             }
 
             appendLog("ERROR " + err.getErrorCode() + ": " + err.getErrorText());
+
+        } else if (msg instanceof RestartOfferMessage offer) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Restart request");
+            alert.setHeaderText(offer.getFromName() + " хочет начать уровень заново");
+            alert.setContentText("Перезапустить уровень?");
+
+            ButtonType yesBtn = new ButtonType("Restart", ButtonBar.ButtonData.OK_DONE);
+            ButtonType noBtn = new ButtonType("Continue", ButtonBar.ButtonData.CANCEL_CLOSE);
+            alert.getButtonTypes().setAll(yesBtn, noBtn);
+
+            alert.showAndWait().ifPresent(bt -> {
+                boolean accepted = (bt == yesBtn);
+                if (client != null && viewState.getClientId() != null) {
+                    client.send(new RestartResponseMessage(viewState.getClientId(), accepted));
+                }
+                if (accepted) {
+                    appendLog("You agreed to restart the level.");
+                } else {
+                    appendLog("You declined the restart request.");
+                }
+            });
         } else {
             appendLog("Received: " + msg.getClass().getSimpleName());
         }
@@ -1239,7 +1273,33 @@ public class SymbiosisApp extends Application {
         if (menuStatusLabel != null) menuStatusLabel.setText("");
     }
 
+    private void onRestartClicked() {
+        if (client == null || viewState.getClientId() == null) {
+            appendLog("Not connected");
+            return;
+        }
 
+        if (viewState.isLevelCompleted()) {
+            appendLog("Level already completed – используйте голосование/переход после победы.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Restart level");
+        confirm.setHeaderText("Запросить перезапуск уровня?");
+        confirm.setContentText("Партнёру придёт запрос, и он сможет согласиться или отказаться.");
+
+        ButtonType sendBtn = new ButtonType("Request restart", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirm.getButtonTypes().setAll(sendBtn, cancelBtn);
+
+        confirm.showAndWait().ifPresent(bt -> {
+            if (bt == sendBtn) {
+                client.send(new RestartRequestMessage(viewState.getClientId()));
+                appendLog("You asked partner to restart the level.");
+            }
+        });
+    }
     @Override
     public void stop() {
         if (client != null) {

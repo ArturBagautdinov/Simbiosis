@@ -52,16 +52,32 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleMessage(Message msg) {
+
         if (msg instanceof JoinMessage join) {
             this.clientId = "C" + System.nanoTime();
             System.out.println("JOIN from " + join.getPlayerName() + " -> clientId=" + clientId);
             server.getGameLogic().handleJoin(this, join);
-        } else if (msg instanceof InputMessage input) {
+        }
+
+        else if (msg instanceof InputMessage input) {
             server.getGameLogic().handleInput(input);
-        } else if (msg instanceof ChatMessage chat) {
+        }
+
+        else if (msg instanceof ChatMessage chat) {
             server.getGameLogic().handleChat(chat);
-        } else if (msg instanceof LevelVoteMessage vote) {
+        }
+
+        else if (msg instanceof LevelVoteMessage vote) {
             server.getGameLogic().handleLevelVote(this, vote);
+        }
+
+
+        else if (msg instanceof RestartRequestMessage req) {
+            server.getGameLogic().handleRestartRequest(this, req);
+        }
+
+        else if (msg instanceof RestartResponseMessage resp) {
+            server.getGameLogic().handleRestartResponse(this, resp);
         }
     }
 

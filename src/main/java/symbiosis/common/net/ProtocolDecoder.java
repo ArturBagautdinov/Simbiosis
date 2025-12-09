@@ -76,6 +76,20 @@ public class ProtocolDecoder {
                 }
                 yield new LevelVoteMessage(clientId, idx);
             }
+            case "RESTART_REQUEST" -> {
+                String clientId = parts.length > 1 ? unescape(parts[1]) : "";
+                yield new RestartRequestMessage(clientId);
+            }
+            case "RESTART_OFFER" -> {
+                String fromName = parts.length > 1 ? unescape(parts[1]) : "Partner";
+                yield new RestartOfferMessage(fromName);
+            }
+            case "RESTART_RESPONSE" -> {
+                String clientId = parts.length > 1 ? unescape(parts[1]) : "";
+                boolean accepted = parts.length > 2 && "1".equals(parts[2]);
+                yield new RestartResponseMessage(clientId, accepted);
+            }
+
             default -> throw new IllegalArgumentException("Unknown message type: " + typeStr);
         };
     }
