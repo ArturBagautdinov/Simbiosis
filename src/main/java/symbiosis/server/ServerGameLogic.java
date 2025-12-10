@@ -94,8 +94,44 @@ public class ServerGameLogic {
                 "############"
         };
 
+        String[] level6 = new String[]{
+                "##################",
+                "#..M..###....L..E#",
+                "#.##..#..B..###..#",
+                "#..B..#..#..M..#.#",
+                "#..##.####.##..#.#",
+                "#..M..B..D..B..#.#",
+                "#..L..#..M..#..#.#",
+                "#..#..####..#..#.#",
+                "#..#..B..B..#..#.#",
+                "#..####..####..#.#",
+                "#M.....L....M..#.#",
+                "#.####.##.####.#.#",
+                "#..B..D..B..L..B.#",
+                "#..M......M....E.#",
+                "##################"
+        };
+
+        String[] level7 = new String[]{
+                "##################",
+                "#..M..###..B....E#",
+                "#.##B.#..######..#",
+                "#..#..#B..M..#..##",
+                "##.#..####.#..#..#",
+                "#..#..D..#.#B.#..#",
+                "#B.####.#.#.#.##B#",
+                "#..#M..#.#.#..#..#",
+                "#..##..#.#.##.#B.#",
+                "#..#..#.#B..#....#",
+                "#.M#B.#.####.#.###",
+                "#..#.......M.#...#",
+                "#B.####.##.###.#.#",
+                "#..M..B..L.....#.#",
+                "##################"
+        };
+
         this.levels = new String[][]{
-                level0, level1, level2, level3, level4, level5
+                level0, level1, level2, level3, level4, level5, level6, level7
         };
 
         this.gameState = loadLevel(0);
@@ -165,6 +201,10 @@ public class ServerGameLogic {
                 crabPos = new Position(2, 6);
             } else if (currentLevelIndex == 5) {
                 crabPos = new Position(9, 7);
+            } else if (currentLevelIndex == 6) {
+                crabPos = new Position(7, 5);
+            } else if (currentLevelIndex == 7) {
+                crabPos = new Position(5, 7);
             } else {
                 crabPos = new Position(2, 5);
             }
