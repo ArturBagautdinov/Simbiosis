@@ -148,8 +148,6 @@ public class SymbiosisApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Symbiosis");
-
-        // тема по умолчанию
         viewState.setSkinTheme(SkinTheme.CLASSIC);
 
         gamePane = createGamePane();
@@ -341,6 +339,19 @@ public class SymbiosisApp extends Application {
         roleBox.setStyle(cbStyle);
         levelBox.setStyle(cbStyle);
 
+        skinBox.setButtonCell(new ListCell<SkinTheme>() {
+            @Override
+            protected void updateItem(SkinTheme item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
+
         roleBox.setCellFactory(cb -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -357,6 +368,32 @@ public class SymbiosisApp extends Application {
             }
         });
         roleBox.setButtonCell(roleBox.getCellFactory().call(null));
+
+        roleBox.setButtonCell(new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    switch (item) {
+                        case "Fish" -> setText("🐟 Fish");
+                        case "Crab" -> setText("🦀 Crab");
+                        default -> setText("🎲 Auto");
+                    }
+                }
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
+
+        levelBox.setButtonCell(new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+                setTextFill(Color.web("#e7f5ff"));
+            }
+        });
 
         Label skinLabel = new Label("Skin theme");
         Label roleLabel = new Label("Role");
