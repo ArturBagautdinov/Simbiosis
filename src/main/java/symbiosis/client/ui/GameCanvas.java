@@ -159,7 +159,6 @@ public class GameCanvas extends Canvas {
                 switch (tile) {
                     case WALL -> drawTile(gc, textures.wall, px, py);
                     case EXIT -> {
-                        // Подложка пола + сам портал + старый glow-эффект
                         drawTile(gc, textures.floorLight, px, py);
                         drawTile(gc, textures.exit, px, py);
 

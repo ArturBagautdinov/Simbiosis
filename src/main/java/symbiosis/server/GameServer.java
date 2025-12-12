@@ -12,10 +12,14 @@ import java.util.List;
 public class GameServer {
 
     private final int port;
+
     private final List<ClientHandler> clients = new ArrayList<>();
+
     private final ProtocolEncoder encoder = new ProtocolEncoder();
     private final ProtocolDecoder decoder = new ProtocolDecoder();
+
     private volatile boolean running = false;
+
     private final ServerGameLogic gameLogic;
 
     public GameServer(int port) {

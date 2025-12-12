@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameState {
+
     private CaveMap map;
+
     private Player fish;
     private Player crab;
+
     private List<GameObject> objects = new ArrayList<>();
+
     private boolean levelCompleted;
 
     public GameState(CaveMap map) {

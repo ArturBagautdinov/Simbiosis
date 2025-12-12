@@ -12,11 +12,14 @@ public class ViewState {
 
     private volatile Position fishPosition;
     private volatile Position crabPosition;
+
     private volatile PlayerRole localRole;
+
     private volatile String clientId;
 
     private volatile int mapWidth;
     private volatile int mapHeight;
+
     private volatile TileType[][] tiles;
 
     private List<GameObject> objects = new ArrayList<>();

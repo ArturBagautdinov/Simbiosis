@@ -1,6 +1,7 @@
 package symbiosis.common.model;
 
 public class GameObject {
+
     private ObjectType type;
     private Position position;
     private boolean active;

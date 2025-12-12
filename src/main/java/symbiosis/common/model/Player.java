@@ -1,6 +1,7 @@
 package symbiosis.common.model;
 
 public class Player {
+
     private String id;
     private String name;
     private PlayerRole role;

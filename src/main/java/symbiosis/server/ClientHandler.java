@@ -9,10 +9,13 @@ public class ClientHandler implements Runnable {
 
     private final Socket socket;
     private final GameServer server;
+
     private final ProtocolEncoder encoder;
     private final ProtocolDecoder decoder;
+
     private BufferedReader in;
     private PrintWriter out;
+
     private String clientId;
 
     public ClientHandler(Socket socket,

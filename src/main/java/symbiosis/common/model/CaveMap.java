@@ -1,8 +1,10 @@
 package symbiosis.common.model;
 
 public class CaveMap {
+
     private final int width;
     private final int height;
+
     private final TileType[][] tiles;
 
     public CaveMap(int width, int height) {

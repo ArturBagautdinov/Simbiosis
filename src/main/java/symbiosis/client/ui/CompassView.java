@@ -9,7 +9,9 @@ import symbiosis.common.model.Position;
 public class CompassView extends Canvas {
 
     private final ViewState viewState;
+
     private double currentAngleRad = 0.0;
+
     private final AnimationTimer timer;
 
     public CompassView(double size, ViewState viewState) {
