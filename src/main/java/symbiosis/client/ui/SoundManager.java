@@ -17,7 +17,7 @@ public class SoundManager {
         } catch (Exception ignored) {}
 
         try {
-            var actionUrl = SoundManager.class.getResource("/sound/action.wav");
+            var actionUrl = SoundManager.class.getResource("/sound/move.wav");
             if (actionUrl != null) {
                 actionClip = new AudioClip(actionUrl.toExternalForm());
             }
